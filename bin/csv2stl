@@ -1,0 +1,27 @@
+#!/usr/bin/python3
+import pandas as pd
+
+df = pd.read_csv('/home/tk/tmp/7/dgm25/test.csv', header=None)
+scale=1
+
+#print(df)
+print("solid test")
+for x1 in range(400):
+  for y in range(400):
+    print("facet normal 0 0 0")
+    print("   outer loop")
+    print("     vertex", x*25, y*25 , scale*df[x][y])
+    print("     vertex", x*25+25, y*25 , scale*df[x+1][y])
+    print("     vertex", x*25, y*25+25 , scale*df[x][y+1])
+    print("  endloop")
+    print("endfacet")
+    print("facet normal 0 0 0")
+    print("   outer loop")
+    print("     vertex", x*25+25, y*25 , scale*df[x+1][y])
+    print("     vertex", x*25+25, y*25+25 ,scale*df[x+1][y+1])
+    print("     vertex", x*25, y*25+25 ,scale*df[x][y+1])
+    print("  endloop")
+    print("endfacet")
+print("endsolid test")
+
+

@@ -1,0 +1,263 @@
+#!/usr/bin/python3
+#{{{ import
+import pandas as pd
+import geopandas as gpd
+import pandas_xyz
+import numpy as np
+import os
+#import pylab as pl
+import utm
+import sys
+import math
+#}}}
+#{{{input
+lat=float(sys.argv[1])
+lon=float(sys.argv[2])
+zoom=int(sys.argv[3])
+x_start=int(sys.argv[4])
+x_end=int(sys.argv[5])+1
+y_start=int(sys.argv[6])
+y_end=int(sys.argv[7])+1
+#}}}
+#{{{class dgm25
+class dgm25:
+  def altitude(n,e):
+    file='/home/tk/tmp/7/dgm25/DGM25_'+str(n)[:2]+str(0)+str(e)[:3]+str(0)+'.xyz'
+    # Interpolation einbauen!!!
+    file_location = os.path.join('data', file)
+    xyz_file = np.genfromtxt(fname=file_location, dtype='unicode')
+    coordinates = (xyz_file[:,:])
+    xyz={}
+    for x in coordinates:
+       xyz[float(x[0])]={}
+    for y in coordinates:
+       xyz[float(y[0])][float(y[1])]=float(y[2])
+    return xyz[n][e]
+  def round(x, base=25):
+    return base * round(x/base)
+#}}}
+#{{{class utm32
+class utm32:
+  def __init__(self,n,e):
+    self.e=e
+    self.n=n
+#}}}
+#{{{class grid25
+class grid25:
+  def __init__(self,n,e):
+    self.e=dgm25.round(e)
+    self.n=dgm25.round(n)
+#}}}
+#{{{class point
+class point:
+    def __init__(self):
+      self.lat=None
+      self.lon=None
+      self.utm=None
+      self.grid=None
+      self.alt=None
+    def latlon(self,lat,lon):
+      self.lat=lat
+      self.lon=lon
+      u = utm.from_latlon(lat,lon)
+      self.utm=utm32(u[0],u[1])
+      self.grid=grid25(u[0],u[1])
+      # ToDo:interpolate altitude
+      self.alt=dgm25.altitude(self.grid.n,self.grid.e) 
+    def addutm(self,n,e):
+      self.utm=utm32(n,e)
+      self.grid=grid25(n,e)
+      l=utm.to_latlon(n,e,32,'U')
+      self.lat=l[0]
+      self.lon=l[1]
+      # ToDo:interpolate altitude
+      self.alt=dgm25.altitude(self.grid.n,self.grid.e) 
+    def print(self):
+      print("LAT:",self.lat, file=sys.stderr)
+      print("LON:",self.lon, file=sys.stderr)
+      print("UTM N:",self.utm.n, file=sys.stderr)
+      print("UTM E:",self.utm.e, file=sys.stderr)
+      print("GRID25 N:",self.grid.n, file=sys.stderr)
+      print("GRID25 E:",self.grid.e, file=sys.stderr)
+      print("ALT:",self.alt, file=sys.stderr)
+#}}}
+#{{{class maplayer
+class maplayer:
+  def __init__(self,map):
+    self.map=map
+    print(map,file=sys.stderr)
+    self.xsize=self.map.size[0]
+    self.ysize=self.map.size[1]
+    self.points=[]
+  def addpoint(self,point):
+    self.points.append(point)
+    for i in self.points:
+      print(i.lat, file=sys.stderr)
+      print(i.lon, file=sys.stderr)
+  def print(self):
+     print("<svg width=\"",self.xsize,"\" height=\"",self.ysize,"\" style=\"position:absolute\" z-index:100>")
+     print("<g>")
+     grid.print(self.xsize,self.ysize)
+     print("</g>")
+     print("</svg>")
+#}}}
+#{{{class coordinate
+class coordinate:
+    def __init__(self,coordinate):
+      self.coordinate=coordinate
+      self.abs=int(coordinate)
+      self.up=int(coordinate)+1
+      self.down=int(coordinate)-1
+      self.rel=float(coordinate%1)
+      self.pixel=int(coordinate%1*256)
+#}}}
+#{{{class coordinates
+class coordinates:
+    def __init__(self,x,y):
+      self.x=coordinate(x)
+      self.y=coordinate(y)
+#}}}
+#{{{class tile
+class tile:
+    def __init__(self,zoom):
+      self.meta={x:None,y=None,zoom=zoom,link=None}
+      self.deg={NW:{lat:None,lon:None},
+                NE:{lat:None,lon:None},
+                SE:{lat:None,lon:None},
+                SW:{lat:None,lon:None},
+                C:{lat:None,lon:None}
+                }
+      self.utm={NW:{N:None,E:None,zone:None,hemi:None},
+                NE:{N:None,E:None,zone:None,hemi:None},
+                SE:{N:None,E:None,zone:None,hemi:None},
+                SW:{N:None,E:None,zone:None,hemi:None},
+                 C:{N:None,E:None,zone:None,hemi:None}
+                }
+      self.size={x:256,y:256}
+    def from_deg(self,lat,lon):
+      print("not implemented")
+    def from_utm(self,n,e,zone,hemi):
+      print("not implemented")
+    def from_tile(self,x,y):
+      print("not implemented")
+     
+ 
+    def deg(self,lat_deg,lon_deg):
+      lat_rad = math.radians(lat_deg)
+      n = 2.0 ** self.zoom
+      self.x = (lon_deg + 180.0) / 360.0 * n
+      self.y = (1.0 - math.asinh(math.tan(lat_rad)) / math.pi) / 2.0 * n
+      self.coordinates=coordinates(self.x,self.y)
+      self.deg={}
+      self.deg["NW"]={}
+      self.deg["NW"]["lat"]=int(self.x)/n*360-180
+      lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * int(self.y) / n)))
+      self.deg["NW"]["lon"]=math.degrees(lat_rad)
+      self.deg["N"]={}
+      self.deg["NE"]={}
+      self.deg["E"]={}
+      self.deg["SE"]={}
+      self.deg["S"]={}
+      self.deg["SW"]={}
+      self.deg["W"]={}
+      self.deg["CENTER"]={}
+      self.deg["CENTER"]["lat"]=(int(self.x)+0.5)/n*360-180
+      lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * (int(self.y)+0.5) / n)))
+      self.deg["CENTER"]["lon"]=math.degrees(lat_rad)
+      print(self.deg)
+      self.link="https://tile.openstreetmap.org/"+str(self.zoom)+"/"+str(self.coordinates.x.abs)+"/"+str(self.coordinates.y.abs)+".png"
+    def tile(self,xtile,ytile):
+      self.coordinates=coordinates(xtile,ytile)
+      n = 2.0 ** self.zoom
+      lon_deg = xtile / n * 360.0 - 180.0
+      lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * ytile / n)))
+      lat_deg = math.degrees(lat_rad)
+      self.link="https://tile.openstreetmap.org/"+str(self.zoom)+"/"+str(self.coordinates.x.abs)+"/"+str(self.coordinates.y.abs)+".png"
+#}}}
+#{{{class map
+class map:
+    def __init__(self,lat,lon,zoom):
+      self.tile=tile(zoom)
+      self.tile.latlon(lat,lon)
+      self.zoom=zoom
+      self.map=[]
+      self.map.append([self.tile.coordinates.x.abs, self.tile.coordinates.y.abs,self.zoom])
+      self.nw(1,1)
+      self.ne(1,1)
+      self.se(1,1)
+      self.sw(1,1)
+    def nw(self,N,W):
+      self.nw_tile=tile(zoom)
+      self.nw_tile.tile(self.tile.coordinates.x.abs-W,self.tile.coordinates.y.abs+N)
+    def ne(self,N,E):
+      self.ne_tile=tile(zoom)
+      self.ne_tile.tile(self.tile.coordinates.x.abs+E,self.tile.coordinates.y.abs+N)
+    def se(self,S,E):
+      self.se_tile=tile(zoom)
+      self.se_tile.tile(self.tile.coordinates.x.abs+E,self.tile.coordinates.y.abs-S)
+    def sw(self,S,W):
+      self.sw_tile=tile(zoom)
+      self.sw_tile.tile(self.tile.coordinates.x.abs-W,self.tile.coordinates.y.abs-S)
+    def calculate(self):
+      self.map={}
+      self.size=[256*(1+self.se_tile.coordinates.x.abs-self.nw_tile.coordinates.x.abs),256*(1+self.nw_tile.coordinates.y.abs-self.se_tile.coordinates.y.abs)]
+      for i in range(self.se_tile.coordinates.y.abs,self.nw_tile.coordinates.y.abs+1,1):
+        self.map[i]=[]
+        for j in range(self.nw_tile.coordinates.x.abs,self.se_tile.coordinates.x.abs+1,1):
+          self.map[i].append(j)
+    def print(self):
+      print("<html><head><link rel=\"stylesheet\" href=\"style.css\"/></head><body>")
+      print("<div class=\"map\">")
+      maplayer.print()
+      print("<table>")
+      for key,value in self.map.items():
+        print(" <tr>")
+        for value in value:
+          print("  <td><img src=\"https://tile.openstreetmap.org/",zoom,"/",value,"/",key,".png\"></img></td> ",sep='')
+        print(" </tr>")
+      print("</table></div></body></html>")
+#}}}
+#{{{class marker
+class marker:
+  def print(x,y):
+    xoffset=10
+    yoffset=10
+    print("<svg width=\"512\" height=\"512\" style=\"position:absolute; left:",x-xoffset,"; top:",y-yoffset,"\" z-index:100>")
+    print("<g>")
+    print("<polyline points=\"0,0 20,20\" style=\"fill:none;stroke:black;stroke-width:2\">")
+    print("</g>")
+    print("<g>")
+    print("<polyline points=\"20,0 0,20\" style=\"fill:none;stroke:black;stroke-width:2\">")
+    print("</g>")
+    print("</svg>")
+#}}}
+#{{{class grid
+class grid:
+  def print(xsize,ysize):
+    for i in range(0,ysize+1,20):
+      print("<path d=\"M",i," 0 l0 ",ysize,"\" style=\"fill:none;stroke:black;stroke-width:0.1\"/>",sep='')
+    for j in range(0,xsize+1,20):
+      print("<path d=\"M0 ",j," l",xsize," 0\" style=\"fill:none;stroke:black;stroke-width:0.1\"/>",sep='')
+    for i in range(0,ysize+1,40):
+      print("<path d=\"M",i," 0 l0 ",ysize,"\" style=\"fill:none;stroke:black;stroke-width:0.3\"/>",sep='')
+    for j in range(0,xsize+1,40):
+      print("<path d=\"M0 ",j," l",xsize," 0\" style=\"fill:none;stroke:black;stroke-width:0.3\"/>",sep='')
+#}}}
+#map=map(lat,lon,zoom)
+#map.se(1,1)
+#map.calculate()
+#maplayer=maplayer(map)
+#point0=point()
+#point0.latlon(lat,lon)
+#point1=point()
+#point1.addutm(point0.utm.n,point0.utm.e)
+#point1.print()
+#maplayer.addpoint(point0)
+#maplayer.addpoint(point1)
+#map.print()
+#tile=tile(15)
+#tile.deg(lat,lon)
+#print(tile.x)
+#print(tile.y)
+#print(tile.zoom)
+# vim:foldmethod=marker:foldlevel=0
