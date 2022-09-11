@@ -1,0 +1,9 @@
+#!/usr/bin/python3
+import dgm
+mesh=dgm.grid(25)
+alt=mesh.alt_from_utm(3574,5597)
+print(alt)
+mesh.print()
+mesh.flood_zone()
+list=mesh.flood_zone_from_utm(355000.0,5595000.0)
+print(list)
