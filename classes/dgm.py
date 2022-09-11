@@ -3,6 +3,7 @@ import numpy as np
 import osm
 import os
 import pandas as pd
+import utm
 #}}}
 #{{{class grid
 class grid:
@@ -35,6 +36,23 @@ class grid:
     return self.xyz[float(grid_n)][float(grid_e)]
   def round(self,x):
     return self.mesh * round(x/base)
+#}}}
+#{{{alt_from_deg
+  def alt_from_deg(self,lat,lon):
+    print("Altitude from deg")
+    print(lat)
+    print(lon)
+    # convert lat lon to utm
+    node_utm=utm.from_latlon(lat,lon)
+    print(node_utm)
+    # convert lat lon to utm and invoke self.alt_from_utm
+    N=node_utm[1]
+    print(N)
+    E=node_utm[0]
+    print(E)
+    alt=self.alt_from_utm(N,E)
+    print(alt)
+
 #}}}
 #{{{generate_stl
   def generate_stl(self):
@@ -85,3 +103,4 @@ class grid:
     print(self.dataframe)
 #}}}
 #}}}
+# vim:foldmethod=marker:foldlevel=0
