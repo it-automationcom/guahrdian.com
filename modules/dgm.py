@@ -88,7 +88,7 @@ class grid:
   def flood_zone_from_utm(self,E,N):
     self.utm["E"]=E
     self.utm["N"]=N
-    zone=self.dataframe.loc[N-10000:N+10000,E-10000:E+10000].gt(280)
+    zone=self.dataframe.loc[N-10000:N+10000,E-10000:E+10000].lt(170)
     stack=zone[zone.isin([True])].stack()
     flood_zone=[]
     for index,value in (stack.iteritems()):
