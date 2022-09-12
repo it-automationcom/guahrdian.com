@@ -1,0 +1,3 @@
+#!/bin/bash
+
+ls ../bin/* ../modules/* ../tests/* ../config.ini | entr -s './test_api_trace.py'  
