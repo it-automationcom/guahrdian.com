@@ -4,6 +4,14 @@ import osm
 import dgm
 import pbf
 import configparser
+import os
+
+#}}}
+#{{{parse config
+config=configparser.ConfigParser()
+configfile=os.path.dirname(__file__)+'/../config.ini'
+config.read(configfile)
+output_html=config['dev']['output']
 #}}}
 #{{{setup map
 map0=osm.map()
@@ -63,34 +71,35 @@ point1.from_deg(7,50.2)
 #    point2=osm.point(maplayer0)
 #    point2.from_utm(i[0],i[1],32,"U")
 #}}}
-#{{{print map
-print("<html><head><link rel=\"stylesheet\" href=\"style.css\"/></head><body>")
-for i in range(1,10,1):
-    print("<button type=\"button\" onclick=\"alert(\'No Function!\')\">Disable/Enable Layer",i,"</button>")
-print("<div class=\"mapcontainer\">")
-print("<div class=\"map\" style=\"position:relative\">")
-#maplayer0.display()
-#maplayer1.display()
-#maplayer2.display()
-#maplayer3.display()
-#maplayer4.display()
-maplayer5.display()
-map0.display()
-print("Map")
-print("<br>")
-map0.print()
-print("<br>")
-print("Maplayer")
-print("<br>")
-maplayer0.print()
-print("<br>")
-print("Point")
-print("<br>")
-#point0.print()
-print("<br>")
-#point1.print()
-print("</div>")
-print("</div>")
-print("</body></html>")
-#}}}
+#{{{write map to file
+with open(output_html, mode="wt") as f:
+    print("<html><head><link rel=\"stylesheet\" href=\"style.css\"/></head><body>")
+    for i in range(1,10,1):
+        print("<button type=\"button\" onclick=\"alert(\'No Function!\')\">Disable/Enable Layer",i,"</button>")
+    print("<div class=\"mapcontainer\">")
+    print("<div class=\"map\" style=\"position:relative\">")
+    #maplayer0.display()
+    #maplayer1.display()
+    #maplayer2.display()
+    #maplayer3.display()
+    #maplayer4.display()
+    maplayer5.display()
+    map0.display()
+    print("Map")
+    print("<br>")
+    map0.print()
+    print("<br>")
+    print("Maplayer")
+    print("<br>")
+    maplayer0.print()
+    print("<br>")
+    print("Point")
+    print("<br>")
+    #point0.print()
+    print("<br>")
+    #point1.print()
+    print("</div>")
+    print("</div>")
+    print("</body></html>")
+    #}}}
 # vim:foldmethod=marker:foldlevel=0
