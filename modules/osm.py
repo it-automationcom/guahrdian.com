@@ -1,3 +1,4 @@
+#{{{import
 import math
 import utm
 import xml
@@ -5,7 +6,14 @@ import xml.etree.ElementTree as et
 import urllib.request
 import api
 import wget
-
+import configparser
+import os
+#}}}
+#{{{read config
+config=configparser.ConfigParser()
+configfile=os.path.dirname(__file__)+'/../config.ini'
+config.read(configfile)
+#}}}
 #{{{tile
 class tile:
 #{{{ __init__
@@ -268,7 +276,7 @@ class maplayer:
        x=i["x"]
        y=i["y"]
        cross=str(str(x-10)+","+str(y-10)+" "+str(x+10)+","+str(y+10)+" "+str(x)+","+str(y)+" "+str(x+10)+","+str(y-10)+" "+str(x-10)+","+str(y+10))
-       print("<polyline points=\""+cross+"\" style=\"fill:none;stroke:black;stroke-width:1\"/>")
+       print("<polyline points=\""+cross+"\" style=\"fill:none;stroke:black;stroke-width:0.5\"/>")
      for i in self.polylines:
        polyline=""
        for j in i:
@@ -366,7 +374,10 @@ class trace:
                         value=tag_tag.get("v")
                         if key=="natural" and value=="spring":
                             self.startway=way
-        # Fallback if natural:spring is not defined
+        # Fallbacks if natural:spring is not defined
+        # read first way from config
+        if self.startway == None:
+            self.startway=config[self.relation]['startway']
         # Use the first way in the list
         if self.startway == None:
             self.startway=list(trace["relations"][self.relation]["ways"])[0]
