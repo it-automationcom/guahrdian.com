@@ -15,8 +15,8 @@ output_html=config['dev']['output']
 #}}}
 #{{{setup map
 map0=osm.map()
-map0.set_boundaries(3,3,3,3)
-map0.from_deg(6.98,50.51,10)
+map0.set_boundaries(4,4,3,4)
+map0.from_deg(6.6494,50.438,11)
 #}}}
 #{{{add maplayers to map
 maplayer0=osm.maplayer(map0)
@@ -26,16 +26,26 @@ maplayer3=osm.maplayer(map0)
 maplayer4=osm.maplayer(map0)
 maplayer5=osm.maplayer(map0)
 #}}}
+#{{{grid
+#for i in range(-180,180+1,1):
+#  lons=[[90,i],[-90,i]]
+#  polyline7=osm.polyline(lons,maplayer5)
+#for i in range(-90,90+1,1):
+#  lats=[[i,-180],[i,180]]
+#  polyline7=osm.polyline(lats,maplayer5)
+#}}}
 #{{{rivers
-#ahr_river=osm.trace("http://localhost:8000/osm/",318372)
-#polyline5=osm.polyline(ahr_river.points,maplayer5)
-
-for i in range(-180,180+1,1):
-  lons=[[90,i],[-90,i]]
-  polyline7=osm.polyline(lons,maplayer5)
-for i in range(-90,90+1,1):
-  lats=[[i,-180],[i,180]]
-  polyline7=osm.polyline(lats,maplayer5)
+rivers=[318372,410311,3244913,3314649,3151697,3251005,2782280,318375,3309646]
+for i in rivers:
+    river=osm.trace("http://localhost:8000/osm/",i)
+    polyline5=osm.polyline(river.get_points(),maplayer5)
+    del river
+#print(ahr_river.get_points())
+#for i in ahr_river.get_points():
+#    lon=float(i[0])
+#    lat=float(i[1])
+#    point0=osm.point(maplayer5)
+#    point0.from_deg(lat,lon)
 #wied_river=osm.trace("http://localhost:8000/osm/",410311)
 #polyline6=osm.polyline(wied_river.points,maplayer5)
 
@@ -78,11 +88,11 @@ with open(output_html, mode="wt") as f:
         print("<button type=\"button\" onclick=\"alert(\'No Function!\')\">Disable/Enable Layer",i,"</button>")
     print("<div class=\"mapcontainer\">")
     print("<div class=\"map\" style=\"position:relative\">")
-    #maplayer0.display()
-    #maplayer1.display()
-    #maplayer2.display()
-    #maplayer3.display()
-    #maplayer4.display()
+    maplayer0.display()
+    maplayer1.display()
+    maplayer2.display()
+    maplayer3.display()
+    maplayer4.display()
     maplayer5.display()
     map0.display()
     print("Map")

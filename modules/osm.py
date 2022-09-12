@@ -4,6 +4,7 @@ import xml
 import xml.etree.ElementTree as et
 import urllib.request
 import api
+import wget
 
 #{{{tile
 class tile:
@@ -268,14 +269,14 @@ class maplayer:
        y=i["y"]
        cross=str(str(x-10)+","+str(y-10)+" "+str(x+10)+","+str(y+10)+" "+str(x)+","+str(y)+" "+str(x+10)+","+str(y-10)+" "+str(x-10)+","+str(y+10))
        print("<polyline points=\""+cross+"\" style=\"fill:none;stroke:black;stroke-width:1\"/>")
-     polyline=""
      for i in self.polylines:
+       polyline=""
        for j in i:
          x=str(j["x"])
          y=str(j["y"])
          polyline=polyline+" "+x+","+y
        print("<g id=\"polyline\">")
-       print("<polyline points=\""+polyline+"\" style=\"fill:none;stroke:blue;stroke-opacity:20%\"/>")
+       print("<polyline points=\""+polyline+"\" style=\"fill:none;stroke:blue;stroke-opacity:50%\"/>")
        print("</g>")
      shadow=""
      for i in self.shadows:
@@ -300,21 +301,110 @@ class maplayer:
 #}}}
 #}}}
 #{{{trace
+# get ways from relation
 class trace:
-    def nodes():
-      url='http://localhost:8000/osm/way/122654675'
-      opener = urllib.request.build_opener()
-      way = et.parse(opener.open(url))
-      nodes=[]
-      for node in way.findall('way/nd'):
-        for ref in node.iter():
-          node=ref.get('ref')
-          nodeurl="http://localhost:8000/osm/node/"+node
-          opener = urllib.request.build_opener()
-          node = et.parse(opener.open(nodeurl))
-          for node in node.findall('node'):
-            nodes.append([node.get('lat'),node.get('lon')])
-      return(nodes)
+#{{{ __init__
+    def __init__(self,url,relation):
+        self.url=url
+        self.relation=str(relation)
+        self.startway=None
+        self.ordered_points=None
+        request_url=self.url+"/relation/"+self.relation
+        # get relation xml
+        opener=urllib.request.build_opener()
+        for i in range(2):
+          try:
+            relation_xml = et.parse(opener.open(request_url))
+          except:
+            fallback_url="https://www.openstreetmap.org/api/0.6/relation/"+self.relation
+            output_directory="/var/www/html/osm/relation/"
+            wget.download(fallback_url, out=output_directory)   
+        # create a dict for the trace
+        # refactor: add multiple relations 
+        trace=dict()
+        trace={"relations":{self.relation:None}}
+        trace["relations"][self.relation]=dict()
+        trace["relations"][self.relation]["ways"]=dict()
+        for member in relation_xml.findall('relation/member'):
+            if member.get('type') == "way" and member.get('role') != "side_stream":
+                way=member.get('ref')
+                trace["relations"][self.relation]["ways"][way]=dict()
+                request_url=self.url+"/way/"+way
+                opener=urllib.request.build_opener()
+                for i in range(2):
+                    try:
+                      way_xml=et.parse(opener.open(request_url))
+                    except:
+                      fallback_url="https://www.openstreetmap.org/api/0.6/way/"+way
+                      output_directory="/var/www/html/osm/way/"
+                      wget.download(fallback_url, out=output_directory)   
+                trace["relations"][self.relation]["ways"][member.get('ref')]["nodes"]=dict()
+                for node in way_xml.findall('way/nd'):
+                    node=node.get('ref')
+                    trace["relations"][self.relation]["ways"][member.get('ref')]["nodes"][node]=dict()
+                    request_url=self.url+"/node/"+node
+                    opener=urllib.request.build_opener()
+                    for i in range(2):
+                        try:
+                            node_xml=et.parse(opener.open(request_url))
+                        except:
+                            fallback_url="https://www.openstreetmap.org/api/0.6/node/"+node
+                            output_directory="/var/www/html/osm/node/"
+                            wget.download(fallback_url, out=output_directory)   
+
+                    trace["relations"][self.relation]["ways"][member.get('ref')]["nodes"][node]["location"]=dict()
+                    trace["relations"][self.relation]["ways"][member.get('ref')]["nodes"][node]["location"]["lat"]=None
+                    trace["relations"][self.relation]["ways"][member.get('ref')]["nodes"][node]["location"]["lon"]=None
+                    trace["relations"][self.relation]["ways"][member.get('ref')]["nodes"][node]["tags"]=dict()
+                    for node_tag in node_xml.findall('node'):
+                        lat=node_tag.get('lat')
+                        lon=node_tag.get('lon')
+                        trace["relations"][self.relation]["ways"][member.get('ref')]["nodes"][node]["location"]["lon"]=lon
+                        trace["relations"][self.relation]["ways"][member.get('ref')]["nodes"][node]["location"]["lat"]=lat
+                    for tag_tag in node_xml.findall('node/tag'):
+                        key=tag_tag.get("k")
+                        value=tag_tag.get("v")
+                        if key=="natural" and value=="spring":
+                            self.startway=way
+        # Fallback if natural:spring is not defined
+        # Use the first way in the list
+        if self.startway == None:
+            self.startway=list(trace["relations"][self.relation]["ways"])[0]
+        ordered_ways=list()
+        ordered_ways.append(self.startway)
+        ordered_nodes=list()
+        node_list=(list(trace["relations"][self.relation]["ways"][self.startway]["nodes"].keys()))
+        ordered_nodes.append(node_list)
+        ordered_points=list()
+        for i in node_list:
+            lat=trace["relations"][self.relation]["ways"][self.startway]["nodes"][i]["location"]["lat"]
+            lon=trace["relations"][self.relation]["ways"][self.startway]["nodes"][i]["location"]["lon"]
+            ordered_points.append([lat,lon])
+        start_node=list(trace["relations"][self.relation]["ways"][self.startway]["nodes"].keys())[0]
+        end_node=list(trace["relations"][self.relation]["ways"][self.startway]["nodes"].keys())[-1]
+        for i in range(100):
+            #find next way 
+            for j in trace["relations"][self.relation]["ways"]:
+                start_node=list(trace["relations"][self.relation]["ways"][j]["nodes"].keys())[0]
+                node_list=list(trace["relations"][self.relation]["ways"][j]["nodes"].keys())
+                if end_node in node_list:
+#                if start_node == end_node:
+                    ordered_ways.append(j)
+                    node_list=list(trace["relations"][self.relation]["ways"][j]["nodes"].keys())
+                    ordered_nodes.append(list(trace["relations"][self.relation]["ways"][j]["nodes"].keys()))
+                    ordered_nodes.append(node_list)
+                    for i in node_list:
+                        lat=trace["relations"][self.relation]["ways"][j]["nodes"][i]["location"]["lat"]
+                        lon=trace["relations"][self.relation]["ways"][j]["nodes"][i]["location"]["lon"]
+                        ordered_points.append([lat,lon])
+                    end_node=list(trace["relations"][self.relation]["ways"][j]["nodes"].keys())[-1]
+#        print(ordered_nodes)
+        self.ordered_points=ordered_points
+#}}}
+#{{{get_points
+    def get_points(self):
+      return(self.ordered_points)
+#}}}
 #}}}
 #{{{point
 class point:
