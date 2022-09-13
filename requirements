@@ -93,6 +93,7 @@ html5lib==1.1
 httplib2==0.20.4
 humanfriendly==10.0
 idna==3.3
+imageio==2.21.3
 imagesize==1.4.1
 img2pdf==0.4.4
 importlib-metadata==4.6.4
@@ -149,7 +150,7 @@ openpyxl==3.0.9
 opt-einsum==3.3.0
 osmium==3.4.1
 packaging==21.3
-pandas==1.3.5
+pandas==1.4.4
 pandas-xyz==0.0.5
 paramiko==2.10.4
 parso==0.8.3
@@ -199,6 +200,7 @@ python-dateutil==2.8.1
 python-dotenv==0.20.0
 python3-lxc==3.0.4
 pytz==2022.1
+PyWavelets==1.3.0
 pywinrm==0.3.0
 pyxattr==0.7.2
 PyYAML==5.4.1
@@ -219,6 +221,7 @@ Rtree==1.0.0
 ruamel.yaml==0.17.16
 ruamel.yaml.clib==0.2.6
 s3transfer==0.6.0
+scikit-image==0.19.3
 scikit-learn==1.1.2
 scipy==1.7.3
 scour==0.38.2
@@ -250,6 +253,7 @@ termcolor==1.1.0
 terminator==2.1.1
 texttable==1.6.4
 threadpoolctl==3.1.0
+tifffile==2022.8.12
 toml==0.10.2
 tomli==2.0.1
 toolz==0.11.2
