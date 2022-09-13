@@ -1,0 +1,8 @@
+<script>
+    function disable(){
+    document.getElementsByClassName("mapcontainer")[0].style.display="none";
+                     }
+    function enable(){
+    document.getElementsByClassName("mapcontainer")[0].style.display="block";
+                     }
+</script>
