@@ -4,6 +4,9 @@ import osm
 import os
 import pandas as pd
 import utm
+from skimage import feature
+import math
+
 #}}}
 #{{{class grid
 class grid:
@@ -88,11 +91,22 @@ class grid:
   def flood_zone_from_utm(self,E,N):
     self.utm["E"]=E
     self.utm["N"]=N
-    zone=self.dataframe.loc[N-10000:N+10000,E-10000:E+10000].lt(170)
-    stack=zone[zone.isin([True])].stack()
+    zone=self.dataframe.loc[N-10000:N+10000,E-10000:E+10000].gt(520)
+    # calculate edges
+    edges=feature.canny(zone.to_numpy())
+    polygon=pd.DataFrame(edges)
+    polygon.set_axis(list(zone.axes[0]), axis=0, inplace=True)
+    polygon.set_axis(list(zone.axes[1]), axis=1, inplace=True)
+    # output as point cloud
+    #stack=zone[zone.isin([True])].stack()
+    # output as outline
+    stack=polygon[polygon.isin([True])].stack()
     flood_zone=[]
     for index,value in (stack.iteritems()):
         flood_zone.append(index)
+    # sort points by polar coordinates
+    center=sum(p[0] for p in flood_zone)/len(flood_zone),sum(p[1] for p in flood_zone)/len(flood_zone)
+    flood_zone.sort(key=lambda p: math.atan2(p[1]-center[1],p[0]-center[0]))
     return(flood_zone)
 #}}}
 #{{{print
