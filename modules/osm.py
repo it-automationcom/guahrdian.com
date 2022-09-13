@@ -284,7 +284,7 @@ class maplayer:
          y=str(j["y"])
          polyline=polyline+" "+x+","+y
        print("<g id=\"polyline\">")
-       print("<polyline points=\""+polyline+"\" style=\"fill:none;stroke:blue;stroke-opacity:50%\"/>")
+       print("<polyline points=\""+polyline+"\" style=\"fill:none;stroke:blue;stroke-opacity:40%\"/>")
        print("</g>")
      shadow=""
      for i in self.shadows:
