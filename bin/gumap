@@ -16,8 +16,8 @@ output_html=config['dev']['output']
 #}}}
 #{{{setup map
 map0=osm.map()
-map0.set_boundaries(2,4,3,3)
-map0.from_deg(6.99,50.53,12)
+map0.set_boundaries(2,3,3,3)
+map0.from_deg(6.99,50.51,14)
 #}}}
 #{{{add maplayers to map
 maplayer0=osm.maplayer(map0)
