@@ -275,8 +275,9 @@ class maplayer:
      for i in self.points:
        x=i["x"]
        y=i["y"]
-       cross=str(str(x-10)+","+str(y-10)+" "+str(x+10)+","+str(y+10)+" "+str(x)+","+str(y)+" "+str(x+10)+","+str(y-10)+" "+str(x-10)+","+str(y+10))
-       print("<polyline points=\""+cross+"\" style=\"fill:none;stroke:black;stroke-width:0.5\"/>")
+       #cross=str(str(x-10)+","+str(y-10)+" "+str(x+10)+","+str(y+10)+" "+str(x)+","+str(y)+" "+str(x+10)+","+str(y-10)+" "+str(x-10)+","+str(y+10))
+       cross=str(str(x-5)+","+str(y-5)+" "+str(x+5)+","+str(y+5)+" "+str(x)+","+str(y)+" "+str(x+5)+","+str(y-5)+" "+str(x-5)+","+str(y+5))
+       print("<polyline points=\""+cross+"\" style=\"fill:none;stroke:blue;stroke-width:1.5\"/>")
      for i in self.polylines:
        polyline=""
        for j in i:
@@ -374,6 +375,8 @@ class trace:
                         value=tag_tag.get("v")
                         if key=="natural" and value=="spring":
                             self.startway=way
+        ways_set=set(trace["relations"][self.relation]["ways"].keys())
+#        print(ways_set)
         # Fallbacks if natural:spring is not defined
         # read first way from config
         if self.startway == None:
@@ -393,23 +396,30 @@ class trace:
             ordered_points.append([lat,lon])
         start_node=list(trace["relations"][self.relation]["ways"][self.startway]["nodes"].keys())[0]
         end_node=list(trace["relations"][self.relation]["ways"][self.startway]["nodes"].keys())[-1]
-        for i in range(100):
+        ways_set.remove(self.startway)
+        for i in range(200):
             #find next way 
+            #for j in trace["relations"][self.relation]["ways"]:
             for j in trace["relations"][self.relation]["ways"]:
-                start_node=list(trace["relations"][self.relation]["ways"][j]["nodes"].keys())[0]
-                node_list=list(trace["relations"][self.relation]["ways"][j]["nodes"].keys())
-                if end_node in node_list:
-#                if start_node == end_node:
-                    ordered_ways.append(j)
+                if j in ways_set:
+                    start_node=list(trace["relations"][self.relation]["ways"][j]["nodes"].keys())[0]
                     node_list=list(trace["relations"][self.relation]["ways"][j]["nodes"].keys())
-                    ordered_nodes.append(list(trace["relations"][self.relation]["ways"][j]["nodes"].keys()))
-                    ordered_nodes.append(node_list)
-                    for i in node_list:
-                        lat=trace["relations"][self.relation]["ways"][j]["nodes"][i]["location"]["lat"]
-                        lon=trace["relations"][self.relation]["ways"][j]["nodes"][i]["location"]["lon"]
-                        ordered_points.append([lat,lon])
-                    end_node=list(trace["relations"][self.relation]["ways"][j]["nodes"].keys())[-1]
+                    if end_node in node_list:
+    #                if start_node == end_node:
+                        ordered_ways.append(j)
+                    #    print("append and remove",j)
+                        ways_set.remove(j)
+
+                        node_list=list(trace["relations"][self.relation]["ways"][j]["nodes"].keys())
+                        ordered_nodes.append(list(trace["relations"][self.relation]["ways"][j]["nodes"].keys()))
+                        ordered_nodes.append(node_list)
+                        for i in node_list:
+                            lat=trace["relations"][self.relation]["ways"][j]["nodes"][i]["location"]["lat"]
+                            lon=trace["relations"][self.relation]["ways"][j]["nodes"][i]["location"]["lon"]
+                            ordered_points.append([lat,lon])
+                        end_node=list(trace["relations"][self.relation]["ways"][j]["nodes"].keys())[-1]
 #        print(ordered_nodes)
+       # print(ordered_ways)
         self.ordered_points=ordered_points
 #}}}
 #{{{get_points
