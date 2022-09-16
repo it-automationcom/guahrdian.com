@@ -91,7 +91,7 @@ class grid:
   def flood_zone_from_utm(self,E,N):
     self.utm["E"]=E
     self.utm["N"]=N
-    zone=self.dataframe.loc[N-10000:N+10000,E-10000:E+10000].gt(520)
+    zone=self.dataframe.loc[N-10000:N+10000,E-10000:E+10000].gt(525)
     # calculate edges
     edges=feature.canny(zone.to_numpy())
     polygon=pd.DataFrame(edges)
