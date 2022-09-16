@@ -17,7 +17,7 @@ output_html=config['dev']['output']
 #{{{setup map
 map0=osm.map()
 map0.set_boundaries(2,3,3,3)
-map0.from_deg(7.01,50.49,14)
+map0.from_deg(7.01,50.49,16)
 #}}}
 #{{{add maplayers to map
 maplayer0=osm.maplayer(map0)
@@ -83,12 +83,11 @@ flood_zone=mesh.flood_zone_from_utm(357300.0,5595000.0)
 flood_zone_deg=[]
 for i in flood_zone:
     polygon1=osm.polygon(i,maplayer5)
+    for j in i:
+        point2=osm.point(maplayer0)
+        point2.from_deg(j[1],j[0])
 #polyline7=osm.polyline(flood_zone_deg,maplayer5)
 #polygon1=osm.polygon(flood_zone_deg,maplayer5)
-
-#for i in flood_zone:
-#    point2=osm.point(maplayer0)
-#    point2.from_utm(i[0],i[1],32,"U")
 #}}}
 #{{{write map to file
 with open(output_html, mode="wt") as f:

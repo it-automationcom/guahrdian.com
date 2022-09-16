@@ -97,9 +97,12 @@ class grid:
     #{{{setup
     self.utm["E"]=E
     self.utm["N"]=N
-    zone=self.dataframe.loc[N-10000:N+10000,E-10000:E+10000].gt(500)
+    zone=self.dataframe.loc[N-10000:N+10000,E-10000:E+10000].gt(497)
     self.zones_utm=[]
     self.zones_deg=[]
+    self.edges=None
+    self.points=[]
+    self.stack=None
     #}}} 
     #{{{find edges with canny filter)
     # calculate edges
@@ -139,16 +142,179 @@ class grid:
         #print(i)
         #print(loc)
         polygon_slice=polygon.iloc[loc]
-        #print(polygon_slice)
         # Currently feature is represented as Bool (can result in overlapping) change to labels FIXME
         stack=polygon_slice[polygon_slice.isin([1])].stack()
         zone=[]
         for index,value in (stack.iteritems()):
-            zone.append(index)
-            # sort by plolar coordinates around center (this only works if the center is within the area: FIXME)
-            center=sum(p[0] for p in zone)/len(zone),sum(p[1] for p in zone)/len(zone)
-            zone.sort(key=lambda p: math.atan2(p[1]-center[1],p[0]-center[0]))
-        self.zones_utm.append(zone)
+           zone.append(index)
+        # sort by polar coordinates around center (this only works if the center is within the area: FIXME)
+        center=sum(p[0] for p in zone)/len(zone),sum(p[1] for p in zone)/len(zone)
+        zone.sort(key=lambda p: math.atan2(p[1]-center[1],p[0]-center[0]))
+        # new algorithm
+        ## find start point
+        start=stack.index.to_list()[0]
+        current=start
+        #{{{find outline
+        zone_sorted=[]
+        #{{{outer for loop
+        for i in range(200):
+                step=self.mesh
+                n_coord=(current[0],current[1]-step)
+                if n_coord == start and i >2:
+                    print("Polygon closed") 
+                    break
+                ne_coord=(current[0]+step,current[1]-step)
+                if ne_coord == start and i >2:
+                    print("Polygon closed") 
+                    break
+                e_coord=(current[0]+step,current[1])
+                if e_coord == start and i >2:
+                    print("Polygon closed") 
+                    break
+                se_coord=(current[0]+step,current[1]+step)
+                if se_coord == start and i >2:
+                    print("Polygon closed") 
+                    break
+                s_coord=(current[0],current[1]+step)
+                if s_coord == start and i >2:
+                    print("Polygon closed") 
+                    break
+                sw_coord=(current[0]-step,current[1]+step)
+                if sw_coord == start and i >2:
+                    print("Polygon closed") 
+                    break
+                w_coord=(current[0]-step,current[1])
+                if w_coord == start and i >2:
+                    print("Polygon closed") 
+                    break
+                nw_coord=(current[0]-step,current[1]-step)
+                if nw_coord == start and i >2:
+                    print("Polygon closed") 
+                    break
+                try:
+                    n=polygon_slice.at[n_coord[0],n_coord[1]]
+                except:
+                    n=False
+                try:
+                    ne=polygon_slice.at[ne_coord[0],ne_coord[1]]
+                except:
+                    ne=False
+                try:
+                    e=polygon_slice.at[e_coord[0],e_coord[1]]
+                except:
+                    e=False
+                try:
+                    se=polygon_slice.at[se_coord[0],se_coord[1]]
+                except:
+                    se=False
+                try:
+                    s=polygon_slice.at[s_coord[0],s_coord[1]]
+                except:
+                    s=False
+                try:
+                    sw=polygon_slice.at[sw_coord[0],sw_coord[1]]
+                except:
+                    sw=False
+                try:
+                    w=polygon_slice.at[w_coord[0],w_coord[1]]
+                except:
+                    w=False
+                try:
+                    nw=polygon_slice.at[nw_coord[0],nw_coord[1]]
+                except:
+                    nw=False
+                #print(nw,n,ne)
+                #print(w,"X",e)
+                #print(sw,s,se)
+                if n==True:
+                   current=n_coord
+                elif ne==True:
+                    current=ne_coord
+                elif e==True:
+                    current=e_coord
+                elif se==True:
+                    current=se_coord
+                elif s==True:
+                    current=s_coord
+                elif sw==True:
+                    current=sw_coord
+                elif w==True:
+                    current=w_coord
+                elif nw==True:
+                    current=nw_coord
+                else:
+                    #edge detection
+                    ## find next coordinate in N
+                    print("Polygon not closed")
+                    #print("  Edge detection")
+                    found=False
+                    for i in range(14):
+                        n_coord=(current[0],current[1]-step*i)
+                        try:
+                            n=polygon_slice.at[n_coord[0],n_coord[1]]
+                        except:
+                           n=False
+                        if n==True:
+                           print("   N")
+                           current=n_coord
+                           polygon_slice._set_value(current[0],current[1],False)
+                           zone_sorted.append(current)
+                           found=True
+                    ## find next coordinate in E
+                    for i in range(14):
+                        e_coord=(current[0]+step*i,current[1])
+                        try:
+                            e=polygon_slice.at[e_coord[0],e_coord[1]]
+                        except:
+                           e=False
+                        if e==True:
+                           print("   E")
+                           current=e_coord
+                           polygon_slice._set_value(current[0],current[1],False)
+                           zone_sorted.append(current)
+                           found=True
+                    ## find next coordinate in S
+                    for i in range(14):
+                        s_coord=(current[0],current[1]+step*i)
+                        try:
+                            s=polygon_slice.at[s_coord[0],s_coord[1]]
+                        except:
+                           s=False
+                        if s==True:
+                           print("   S")
+                           found=True
+                           current=s_coord
+                           polygon_slice._set_value(current[0],current[1],False)
+                           zone_sorted.append(current)
+                    ## find next coordinate in W
+                    for i in range(14):
+                        w_coord=(current[0]-step*i,current[1])
+                        try:
+                            w=polygon_slice.at[w_coord[0],w_coord[1]]
+                        except:
+                           w=False
+                        if w==True:
+                           print("   W")
+                           found=True
+                           print("    Previous point")
+                           print("    ",current)
+                           current=w_coord
+                           polygon_slice._set_value(current[0],current[1],False)
+                           zone_sorted.append(current)
+                           print("    I am here")
+                           print("    ",current)
+                           print("    I started at")
+                           print("    ",start)
+                           print(polygon_slice)
+                    # end of polygon. FIXME: Check if is closed (start=end)
+                zone_sorted.append(current)
+                polygon_slice._set_value(current[0],current[1],False)
+                #}}}
+        #}}}
+        #print(zone_sorted)
+        # append zone to list of zones
+        #self.zones_utm.append(zone)
+        self.zones_utm.append(zone_sorted)
         #print("Zone",i,":",zone)
 
     #loc=objects[5]
@@ -157,14 +323,14 @@ class grid:
     # output as outline
     #stack=polygon[polygon.isin([True])].stack()
     # only first object
-    stack=polygon_slice[polygon_slice.isin([1])].stack()
+    #self.stack=polygon_slice[polygon_slice.isin([1])].stack()
     #print(stack)
-    flood_zone=[]
-    for index,value in (stack.iteritems()):
-        flood_zone.append(index)
+    #flood_zone=[]
+    #for index,value in (stack.iteritems()):
+    #    flood_zone.append(index)
     # sort points by polar coordinates
-    center=sum(p[0] for p in flood_zone)/len(flood_zone),sum(p[1] for p in flood_zone)/len(flood_zone)
-    flood_zone.sort(key=lambda p: math.atan2(p[1]-center[1],p[0]-center[0]))
+    #center=sum(p[0] for p in flood_zone)/len(flood_zone),sum(p[1] for p in flood_zone)/len(flood_zone)
+    #flood_zone.sort(key=lambda p: math.atan2(p[1]-center[1],p[0]-center[0]))
     #return(flood_zone)
     #{{{translate utm to deg
     for i in range(len(self.zones_utm)):
@@ -185,6 +351,10 @@ class grid:
     print("Name:",self.name)
     print("File:",self.file)
     print(self.dataframe)
+#}}}
+#{{{get_edges
+  def get_edges(self):
+    return(self.stack) 
 #}}}
 #}}}
 # vim:foldmethod=marker:foldlevel=0
