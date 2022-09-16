@@ -25,8 +25,8 @@ def result(returncode):
         print("\033[1;30;41m Failed \033[0;0m", flush=True)
         return(1)
 
-trace=osm.trace("http://localhost:8000/osm",3244913)
-print(trace.get_points())
+liersbach=osm.trace("http://localhost:8000/osm",3251441)
+#print(sahrbach.get_points())
 
 
 result(returncode)
