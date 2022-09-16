@@ -6,6 +6,8 @@ import pandas as pd
 import utm
 from skimage import feature
 import math
+from scipy import ndimage
+from scipy.ndimage import label, generate_binary_structure
 
 #}}}
 #{{{class grid
@@ -85,29 +87,97 @@ class grid:
     print("endsolid",self.name)
 #}}}
 #{{{flood_zone
+#{{{flood_zone
   def flood_zone(self):
     self.level=None
     self.utm={"E":None,"N":None}
+#}}}
+#{{{flood_zone_from_utm
   def flood_zone_from_utm(self,E,N):
+    #{{{setup
     self.utm["E"]=E
     self.utm["N"]=N
-    zone=self.dataframe.loc[N-10000:N+10000,E-10000:E+10000].gt(525)
+    zone=self.dataframe.loc[N-10000:N+10000,E-10000:E+10000].gt(500)
+    self.zones_utm=[]
+    self.zones_deg=[]
+    #}}} 
+    #{{{find edges with canny filter)
     # calculate edges
     edges=feature.canny(zone.to_numpy())
     polygon=pd.DataFrame(edges)
     polygon.set_axis(list(zone.axes[0]), axis=0, inplace=True)
     polygon.set_axis(list(zone.axes[1]), axis=1, inplace=True)
+    #}}}
+    #{{{label features (find distinct zones)
+    # set ajacency
+    s=[[1,1,1],
+       [1,1,1],
+       [1,1,1]]
+    labeled_array, num_features = label(polygon, structure=s)
+    # create a pandas dataframe from labeled features
+    features=pd.DataFrame(labeled_array)
+    features.set_axis(list(zone.axes[0]), axis=0, inplace=True)
+    features.set_axis(list(zone.axes[1]), axis=1, inplace=True)
+    #}}}
+    #{{{debug
+    #print(features)
+    #loc=obj1[0]
+    #print(labeled_array[loc])
+    #print(features.iloc[loc])
+    #loc=obj1[1]
+    #print(labeled_array[loc])
+    #print(features.iloc[loc])
+    #labeled_array, num_features = label(polygon)
+    #print("Found Features:",num_features)
+    #print("Labeled Array:",labeled_array)
+    #}}}
+    #{{{loop over zones (find features)
+    objects=ndimage.find_objects(features)
+    #print("Found Objects:",len(objects))
+    for i in range(len(objects)):
+        loc=objects[i]
+        #print(i)
+        #print(loc)
+        polygon_slice=polygon.iloc[loc]
+        #print(polygon_slice)
+        # Currently feature is represented as Bool (can result in overlapping) change to labels FIXME
+        stack=polygon_slice[polygon_slice.isin([1])].stack()
+        zone=[]
+        for index,value in (stack.iteritems()):
+            zone.append(index)
+            # sort by plolar coordinates around center (this only works if the center is within the area: FIXME)
+            center=sum(p[0] for p in zone)/len(zone),sum(p[1] for p in zone)/len(zone)
+            zone.sort(key=lambda p: math.atan2(p[1]-center[1],p[0]-center[0]))
+        self.zones_utm.append(zone)
+        #print("Zone",i,":",zone)
+
+    #loc=objects[5]
     # output as point cloud
     #stack=zone[zone.isin([True])].stack()
     # output as outline
-    stack=polygon[polygon.isin([True])].stack()
+    #stack=polygon[polygon.isin([True])].stack()
+    # only first object
+    stack=polygon_slice[polygon_slice.isin([1])].stack()
+    #print(stack)
     flood_zone=[]
     for index,value in (stack.iteritems()):
         flood_zone.append(index)
     # sort points by polar coordinates
     center=sum(p[0] for p in flood_zone)/len(flood_zone),sum(p[1] for p in flood_zone)/len(flood_zone)
     flood_zone.sort(key=lambda p: math.atan2(p[1]-center[1],p[0]-center[0]))
-    return(flood_zone)
+    #return(flood_zone)
+    #{{{translate utm to deg
+    for i in range(len(self.zones_utm)):
+        self.zones_deg.append([])
+        #print(self.zones_deg)
+        for j in range(len(self.zones_utm[i])):
+                E=self.zones_utm[i][j][0]
+                N=self.zones_utm[i][j][1]
+                deg=utm.to_latlon(N,E,32,"U")
+                self.zones_deg[i].append(deg)
+    #}}}
+    return(self.zones_deg)
+#}}}
 #}}}
 #{{{print
   def print(self):

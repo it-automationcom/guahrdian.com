@@ -247,7 +247,7 @@ class maplayer:
     self.root={"deg":{"lon":map.get_root_lon(),"lat":map.get_root_lat()},"utm":None,"tile":{"x":map.get_root_tile("x"),"y":map.get_root_tile("y")}}
     self.points=[]
     self.polylines=[]
-    self.shadows=[]
+    self.polygons=[]
 #}}}  
 #{{{get_zoom
   def get_zoom(self):
@@ -265,9 +265,9 @@ class maplayer:
   def add_polyline(self,polyline):
     self.polylines.append(polyline)
 #}}}
-#{{{add_shadow
-  def add_shadow(self,polyline):
-    self.shadows.append(polyline)
+#{{{add_polygon
+  def add_polygon(self,polygon):
+    self.polygons.append(polygon)
 #}}}
 #{{{display
   def display(self):
@@ -287,16 +287,15 @@ class maplayer:
        print("<g id=\"polyline\">")
        print("<polyline points=\""+polyline+"\" style=\"fill:none;stroke:blue;stroke-opacity:40%\"/>")
        print("</g>")
-     shadow=""
-     for i in self.shadows:
+     for i in self.polygons:
+       polygon=""
        for j in i:
          x=str(j["x"])
          y=str(j["y"])
-         shadow=shadow+" "+x+","+y
-       print("<g id=\"shadow\" transform=\"translate(100,100)\">")
-       print("<polyline points=\""+shadow+"\" style=\"fill:none;stroke:black;stroke-opacity:20%\"/>")
+         polygon=polygon+" "+x+","+y
+       print("<g id=\"polyline\">")
+       print("<polyline points=\""+polygon+"\" style=\"fill:red;fill-opacity:40%;stroke:none\"/>")
        print("</g>")
-
      print("</svg>")
 #}}}
 #{{{print
@@ -472,6 +471,22 @@ class polyline:
   def print(self):
     print(self.zoom)
     print(self.polylines)
+#}}}
+#{{{polygon
+class polygon:
+  def __init__(self,list,maplayer):
+    self.zoom=maplayer.get_zoom()
+    self.polygon=[]
+    for i in list:
+      lon=float(i[1])
+      lat=float(i[0])
+      self.x=int((tile.lon2xpos(None,lon,self.zoom)-maplayer.get_root_tile("x"))*256)
+      self.y=int((tile.lat2ypos(None,lat,self.zoom)-maplayer.get_root_tile("y"))*256)
+      self.polygon.append({"x":self.x,"y":self.y})
+    maplayer.add_polygon(self.polygon)
+  def print(self):
+    print(self.zoom)
+    print(self.polygon)
 #}}}
 #{{{shadow
 class shadow:
