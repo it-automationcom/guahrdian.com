@@ -48,7 +48,8 @@ class tile:
     def from_tile(self,x,y):
       self.meta["x"]=x
       self.meta["y"]=y
-      self.meta["link"]="https://tile.openstreetmap.org/"+str(self.meta["zoom"])+"/"+str(self.meta["x"])+"/"+str(self.meta["y"])+".png"
+      #self.meta["link"]="https://tile.openstreetmap.org/"+str(self.meta["zoom"])+"/"+str(self.meta["x"])+"/"+str(self.meta["y"])+".png"
+      self.meta["link"]="http://tile.stamen.com/terrain-background/"+str(self.meta["zoom"])+"/"+str(self.meta["x"])+"/"+str(self.meta["y"])+".png"
       self.deg["NW"]["lat"]=self.y2lat(y,self.meta["zoom"])
       self.deg["NW"]["lon"]=self.x2lon(x,self.meta["zoom"])
       self.deg["NE"]["lat"]=self.y2lat(y,self.meta["zoom"])
@@ -294,7 +295,7 @@ class maplayer:
          y=str(j["y"])
          polygon=polygon+" "+x+","+y
        print("<g id=\"polyline\">")
-       print("<polyline points=\""+polygon+"\" style=\"fill:red;fill-opacity:40%;stroke:none\"/>")
+       print("<polyline points=\""+polygon+"\" style=\"fill:black;fill-opacity:3%;stroke:none;stroke-width:1\"/>")
        print("</g>")
      print("</svg>")
 #}}}
