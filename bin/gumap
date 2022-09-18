@@ -17,7 +17,7 @@ output_html=config['dev']['output']
 #{{{setup map
 map0=osm.map()
 map0.set_boundaries(1,3,2,2)
-map0.from_deg(7.01,50.49,12)
+map0.from_deg(6.99,50.516,16)
 #}}}
 #{{{add maplayers to map
 maplayer0=osm.maplayer(map0)
@@ -74,17 +74,28 @@ point1=osm.point(maplayer0)
 point1.from_deg(7,50.2)
 #}}}
 #{{{zone by altitude
-for j in range(150,540,30):
-    mesh=dgm.grid(25)
-    mesh.zones(-j)
-    E=35
-    N=559
-    alt=mesh.alt_from_utm(E,N)
-    zones=mesh.zones_from_utm(357300.0,5595000.0)
-    for i in zones:
-        polygon1=osm.polygon(i,maplayer5)
-        del polygon1
-    del mesh
+# Shade by Altitude 
+#for j in range(150,540,20):
+    #mesh=dgm.grid(25)
+    #mesh.zones(-j)
+    #E=35
+    #N=559
+    #alt=mesh.alt_from_utm(E,N)
+    #zones=mesh.zones_from_utm(357300.0,5595000.0)
+    #for i in zones:
+        #polygon1=osm.polygon(i,maplayer5)
+        #del polygon1
+    #del mesh
+mesh=dgm.grid(25)
+mesh.zones(-170)
+E=35
+N=559
+alt=mesh.alt_from_utm(E,N)
+zones=mesh.zones_from_utm(357300.0,5595000.0)
+for i in zones:
+   polygon1=osm.polygon(i,maplayer5)
+   del polygon1
+del mesh
 
 #for i in mesh.get_point_cloud():
 #    point3=osm.point(maplayer0)

@@ -240,7 +240,6 @@ class grid:
                         #N=sliced.columns[col]
                         E=E0+idx*self.mesh
                         N=N0+col*self.mesh
-
                         polygon_utm.append([N,E])
                         utm_zone=32
                         utm_hemi="U"
@@ -255,5 +254,9 @@ class grid:
     return(polygons_deg)
         #}}}
     #}}}
+#}}}
+#}}}
+#{{{interpolation
+
 #}}}
 # vim:foldmethod=marker:foldlevel=0

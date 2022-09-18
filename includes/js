@@ -5,4 +5,25 @@
     function enable(){
     document.getElementsByClassName("mapcontainer")[0].style.display="block";
                      }
+                     
+    function enable_layers(){
+    document.getElementsByTagName("svg")[0].style.display="block";
+    document.getElementsByTagName("svg")[1].style.display="block";
+    document.getElementsByTagName("svg")[2].style.display="block";
+    document.getElementsByTagName("svg")[3].style.display="block";
+    document.getElementsByTagName("svg")[4].style.display="block";
+    document.getElementsByTagName("svg")[5].style.display="block";
+    console.log(document.getElementsByTagName("svg"))
+    console.log("enable layers")
+                     }
+
+    function disable_layers(){
+    document.getElementsByTagName("svg")[0].style.display="none";
+    document.getElementsByTagName("svg")[1].style.display="none";
+    document.getElementsByTagName("svg")[2].style.display="none";
+    document.getElementsByTagName("svg")[3].style.display="none";
+    document.getElementsByTagName("svg")[4].style.display="none";
+    document.getElementsByTagName("svg")[5].style.display="none";
+    console.log("disable layers")
+                     }
 </script>

@@ -1,7 +1,8 @@
   <button type="button" onclick="disable()">Disable Map </button>
   <button type="button" onclick="enable()">Enable Map </button>
-  <!--<button type="button" onclick="alert('No Function!')">Disable/Enable Layer 3 </button>
-  <button type="button" onclick="alert('No Function!')">Disable/Enable Layer 4 </button>
+  <button type="button" onclick="disable_layers()">Disable Maplayers</button>
+  <button type="button" onclick="enable_layers()">Enable Maplayers</button>
+  <!--<button type="button" onclick="alert('No Function!')">Disable/Enable Layer 4 </button>
   <button type="button" onclick="alert('No Function!')">Disable/Enable Layer 5 </button>
   <button type="button" onclick="alert('No Function!')">Disable/Enable Layer 6 </button>
   <button type="button" onclick="alert('No Function!')">Disable/Enable Layer 7 </button>
