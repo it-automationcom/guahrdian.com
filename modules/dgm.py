@@ -47,8 +47,53 @@ class grid:
 #}}}
 #{{{load_from_bbox_utm
   def load_from_bbox_utm(self,bbox):
-      print("Bounding box")
-      print(bbox)
+      max_e=self.fit_grid(max(bbox,key=lambda item:item[1])[1])
+      max_n=self.fit_grid(max(bbox,key=lambda item:item[0])[0])
+      min_e=self.fit_grid(min(bbox,key=lambda item:item[1])[1])
+      min_n=self.fit_grid(min(bbox,key=lambda item:item[0])[0])
+      self.xyz={}
+      for i in range(int(str(min_n)[:2]),int(str(max_n)[:2])+1):
+          for j in range(int(str(min_e)[:3]),int(str(max_e)[:3])+1):
+            name=str(i)+str(0)+str(j)+str(0)
+            dgmfile="/var/www/html/dgm/"+str(self.mesh)+"/DGM"+str(self.mesh)+"_"+str(name)+".xyz"
+            file_location=os.path.join('data',dgmfile)
+            try:
+                xyz_file = np.genfromtxt(fname=file_location, dtype='unicode')
+            except:
+                print(file_location,"not found")
+                continue
+#            print(dgmfile)
+            coordinates = (xyz_file[:,:])
+#            print(coordinates)
+            for x in coordinates:
+              if float(x[0]) not in self.xyz:
+                  self.xyz[float(x[0])]={}
+            for y in coordinates:
+              self.xyz[float(y[0])][float(y[1])]=float(y[2])
+      self.dataframe=pd.DataFrame.from_dict(self.xyz)
+      print(self.dataframe)
+      df_min_e=int(self.dataframe.index[0])
+      df_max_e=int(self.dataframe.index[-1])
+      df_min_n=int(self.dataframe.columns[0])
+      df_max_n=int(self.dataframe.columns[-1])
+      #print(df_min_e)
+      if df_min_e > min_e:
+          min_e=df_min_e
+      #print(min_e)
+      if df_max_e < max_e:
+        max_e=df_max_e
+      #print(df_max_e)
+      #print(max_e)
+      if df_min_n > min_n:
+          min_n=df_min_n
+      if df_max_n < max_n:
+        max_n=df_max_n
+      print(df_min_n)
+      print(min_n)
+      print(df_max_n)
+      print(max_n)
+      self.dataframe=self.dataframe.loc[min_e:max_e,min_n:max_n]
+#      print(self.dataframe)
 #}}}
 #{{{alt_from_deg
   def alt_from_deg(self,lat,lon):
@@ -109,7 +154,8 @@ class grid:
     #{{{setup
     self.utm["E"]=E
     self.utm["N"]=N
-    zone=self.dataframe.loc[N-10000:N+10000,E-10000:E+10000].gt(520)
+    #zone=self.dataframe.loc[N-10000:N+10000,E-10000:E+10000].gt(520)
+    zone=self.dataframe.gt(520)
     self.zones_utm=[]
     self.zones_deg=[]
     self.edges=None
@@ -193,9 +239,11 @@ class grid:
     #}}}
     #{{{select zones by altitude 
     if self.level >=0:
-        self.zones=self.dataframe.loc[N-10000:N+10000,E-10000:E+10000].gt(self.level)
+        #self.zones=self.dataframe.loc[N-30000:N+30000,E-30000:E+30000].gt(self.level)
+        self.zones=self.dataframe.gt(self.level)
     elif self.level <0:
-        self.zones=self.dataframe.loc[N-10000:N+10000,E-10000:E+10000].lt(self.level*-1)
+        #self.zones=self.dataframe.loc[N-30000:N+30000,E-30000:E+30000].lt(self.level*-1)
+        self.zones=self.dataframe.lt(self.level*-1)
     #print(self.zones)
     #}}}
     #{{{label different zones

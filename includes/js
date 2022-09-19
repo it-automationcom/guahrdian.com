@@ -1,9 +1,34 @@
 <script>
     function disable(){
     document.getElementsByClassName("mapcontainer")[0].style.display="none";
+    document.getElementById("btn1").style.display="none";
+    document.getElementById("btn2").style.display="block";
+    document.getElementById("btn2").style.background="green";
+
+    document.getElementById("btn3").style.display="none";
+    document.getElementById("btn4").style.display="none";
+    document.getElementById("btn5").style.display="none";
+    document.getElementById("btn6").style.display="none";
+    document.getElementById("btn7").style.display="none";
+    document.getElementById("btn8").style.display="none";
+    document.getElementById("btn9").style.display="none";
+    document.getElementById("btn10").style.display="none";
+
                      }
+
     function enable(){
     document.getElementsByClassName("mapcontainer")[0].style.display="block";
+    document.getElementById("btn2").style.display="none";
+    document.getElementById("btn1").style.display="block";
+    document.getElementById("btn1").style.background="red";
+
+    document.getElementById("btn3").style.display="block";
+    document.getElementById("btn4").style.display="block";
+    document.getElementById("btn5").style.display="block";
+    document.getElementById("btn6").style.display="block";
+    document.getElementById("btn7").style.display="block";
+    document.getElementById("btn8").style.display="block";
+    document.getElementById("btn9").style.display="block";
                      }
                      
     function enable_layers(){
@@ -13,6 +38,9 @@
     document.getElementsByTagName("svg")[3].style.display="block";
     document.getElementsByTagName("svg")[4].style.display="block";
     document.getElementsByTagName("svg")[5].style.display="block";
+    document.getElementById("btn4").style.display="none";
+    document.getElementById("btn3").style.display="block";
+    document.getElementById("btn3").style.background="green";
     console.log(document.getElementsByTagName("svg"))
     console.log("enable layers")
                      }
@@ -24,6 +52,51 @@
     document.getElementsByTagName("svg")[3].style.display="none";
     document.getElementsByTagName("svg")[4].style.display="none";
     document.getElementsByTagName("svg")[5].style.display="none";
+    document.getElementById("btn3").style.display="none";
+    document.getElementById("btn4").style.display="block";
+    document.getElementById("btn4").style.background="red";
     console.log("disable layers")
                      }
+
+    function disable_layer0(){
+    document.getElementById("layer0").style.display="none";
+    document.getElementById("btn6").style.display="none";
+    document.getElementById("btn5").style.display="block";
+    document.getElementById("btn5").style.background="green";
+    }
+    
+    function enable_layer0(){
+    document.getElementById("layer0").style.display="block";
+    document.getElementById("btn5").style.display="none";
+    document.getElementById("btn6").style.display="block";
+    document.getElementById("btn6").style.background="red";
+    }
+
+    function disable_layer1(){
+    document.getElementById("layer1").style.display="none";
+    document.getElementById("btn8").style.display="none";
+    document.getElementById("btn7").style.display="block";
+    document.getElementById("btn7").style.background="green";
+    }
+    
+    function enable_layer1(){
+    document.getElementById("layer1").style.display="block";
+    document.getElementById("btn7").style.display="none";
+    document.getElementById("btn8").style.display="block";
+    document.getElementById("btn8").style.background="red";
+    }
+
+    function disable_layer2(){
+    document.getElementById("layer2").style.display="none";
+    document.getElementById("btn10").style.display="none";
+    document.getElementById("btn9").style.display="block";
+    document.getElementById("btn0").style.background="green";
+    }
+    
+    function enable_layer2(){
+    document.getElementById("layer2").style.display="block";
+    document.getElementById("btn9").style.display="none";
+    document.getElementById("btn10").style.display="block";
+    document.getElementById("btn10").style.background="red";
+    }
 </script>

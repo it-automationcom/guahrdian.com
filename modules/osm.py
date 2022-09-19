@@ -58,11 +58,11 @@ class tile:
       self.deg["NW"]["lon"]=self.x2lon(x,self.meta["zoom"])
       self.deg["NE"]["lat"]=self.y2lat(y,self.meta["zoom"])
       self.deg["NE"]["lon"]=self.x2lon(x+1,self.meta["zoom"])
-      self.deg["SE"]["lat"]=self.y2lat(y-1,self.meta["zoom"])
+      self.deg["SE"]["lat"]=self.y2lat(y+1,self.meta["zoom"])
       self.deg["SE"]["lon"]=self.x2lon(x+1,self.meta["zoom"])
-      self.deg["SW"]["lat"]=self.y2lat(y-1,self.meta["zoom"])
+      self.deg["SW"]["lat"]=self.y2lat(y+1,self.meta["zoom"])
       self.deg["SW"]["lon"]=self.x2lon(x,self.meta["zoom"])
-      self.deg["C"]["lat"]=self.y2lat(y-0.5,self.meta["zoom"])
+      self.deg["C"]["lat"]=self.y2lat(y+0.5,self.meta["zoom"])
       self.deg["C"]["lon"]=self.x2lon(x+0.5,self.meta["zoom"])
       self.utm["NW"]=utm.from_latlon(self.deg["NW"]["lat"],self.deg["NW"]["lon"])
       self.utm["NE"]=utm.from_latlon(self.deg["NE"]["lat"],self.deg["NE"]["lon"])
@@ -80,6 +80,11 @@ class tile:
     def get_root_lon(self):
       root_lon=self.deg["NW"]["lon"]
       return(root_lon)
+#}}}
+#{{{get_root_utm
+    def get_root_utm(self):
+      root_utm=self.utm["NW"]
+      return(root_utm)
 #}}}
 #{{{get_corner_deg
     def get_corner_deg(self,corner):
@@ -161,6 +166,7 @@ class map:
                 "SE":{"dist":{"x":1,"y":1}},"tile":None,
                 "SW":{"dist":{"x":1,"y":1}},"tile":None,
                 "C":{"dist":{"x":0,"y":0}},"tile":None}
+    self.tiles=None
     self.bbox_deg=[]
     self.bbox_utm=[]
 #}}}
@@ -209,6 +215,11 @@ class map:
     root_lon=self.nw.get_root_lon()
     return(root_lon)
 #}}}
+#{{{get_root_utm
+  def get_root_utm(self):
+    root_utm=self.nw.get_root_utm()
+    return(root_utm)
+#}}}
 #{{{get_root_tile
   def get_root_tile(self,axis):
     root_tile=self.nw.get_tile(axis)
@@ -226,8 +237,8 @@ class map:
   def get_zoom(self):
     return(self.zoom)
 #}}}
-#{{{display
-  def display(self):
+#{{{calculate
+  def calculate(self):
     self.tiles={}
     for i in range(self.offset["NW"]["tile"].meta["y"],self.offset["SE"]["tile"].meta["y"]+1,1):
       self.tiles[i]={}
@@ -235,17 +246,23 @@ class map:
         newtile=tile(self.offset["C"]["tile"].meta["zoom"])
         newtile.from_tile(j,i)
         if i == self.offset["NW"]["tile"].meta["y"] and j == self.offset["NW"]["tile"].meta["x"]:
-                #print("Found the NW corner of the map")
-                #newtile.print()
                 self.bbox_deg.append(newtile.get_corner_deg("NW"))
                 self.bbox_utm.append(newtile.get_corner_utm("NW"))
+        if i == self.offset["NE"]["tile"].meta["y"] and j == self.offset["NE"]["tile"].meta["x"]:
+                self.bbox_deg.append(newtile.get_corner_deg("NE"))
+                self.bbox_utm.append(newtile.get_corner_utm("NE"))
         if i == self.offset["SE"]["tile"].meta["y"] and j == self.offset["SE"]["tile"].meta["x"]:
-                #print("Found the SE corner of the map")
-                #newtile.print()
                 self.bbox_deg.append(newtile.get_corner_deg("SE"))
-                # FIXME: need to get all 4 corners because UTM may be slanted in regards to WGS84
                 self.bbox_utm.append(newtile.get_corner_utm("SE"))
+        if i == self.offset["SW"]["tile"].meta["y"] and j == self.offset["SW"]["tile"].meta["x"]:
+                self.bbox_deg.append(newtile.get_corner_deg("SW"))
+                self.bbox_utm.append(newtile.get_corner_utm("SW"))
         self.tiles[i][j]=newtile
+#}}}
+#{{{display
+  def display(self):
+    if self.tiles == None:
+        self.calculate()
     print("<table>")
     for y,value in self.tiles.items():
       print("<tr>")
@@ -286,9 +303,12 @@ class map:
 class maplayer:
 #{{{__init__
   def __init__(self,map):
+    self.name=None
     self.zoom=map.get_zoom()
     self.size={"x":map.size["x"],"y":map.size["y"]}
-    self.root={"deg":{"lon":map.get_root_lon(),"lat":map.get_root_lat()},"utm":None,"tile":{"x":map.get_root_tile("x"),"y":map.get_root_tile("y")}}
+    self.root={"deg":{"lon":map.get_root_lon(),"lat":map.get_root_lat()},"utm":map.get_root_utm(),"tile":{"x":map.get_root_tile("x"),"y":map.get_root_tile("y")}}
+    self.bbox_deg=map.get_bbox_deg()
+    self.bbox_utm=map.get_bbox_utm()
     self.points=[]
     self.polylines=[]
     self.polygons=[]
@@ -297,9 +317,21 @@ class maplayer:
   def get_zoom(self):
     return(self.zoom)
 #}}}
+#{{{set_ name_
+  def set_name(self,name):
+      self.name=name
+#}}}
 #{{{get_root_tile
   def get_root_tile(self,axis):
     return(self.root["tile"][axis])
+#}}}
+#{{{get_bbox_deg
+  def get_bbox_deg(self):
+    return(self.bbox_deg)
+#}}}
+#{{{get_bbox_utm
+  def get_bbox_utm(self):
+    return(self.bbox_utm)
 #}}}
 #{{{add_point
   def add_point(self,x,y):
@@ -315,6 +347,7 @@ class maplayer:
 #}}}
 #{{{display
   def display(self):
+     print("<div id=\""+str(self.name)+"\">")
      print("<svg width=\""+str(self.size["x"])+"\" height=\""+str(self.size["y"])+"\" style=\"position:absolute; left:0; top:0\" z-index:100>")
      for i in self.points:
        x=i["x"]
@@ -341,13 +374,17 @@ class maplayer:
        print("<polyline points=\""+polygon+"\" style=\"fill:blue;fill-opacity:30%;stroke:none;stroke-width:1\"/>")
        print("</g>")
      print("</svg>")
+     print("</div>")
 #}}}
 #{{{print
   def print(self):
     print("<pre>")
     print("Maplayer:")
+    print("  self.name:",self.name)
     print("  self.size:",self.size)
     print("  self.root:",self.root)
+    print("  self.bbox_deg:",self.bbox_deg)
+    print("  self.bbox_utm:",self.bbox_utm)
     print("  self.points:",len(self.points))
     print("  self.polylines:",len(self.polylines))
     print("  self.polygons:",len(self.polygons))
@@ -364,6 +401,8 @@ class trace:
         self.relation=str(relation)
         self.startway=None
         self.ordered_points=None
+        self.bbox_deg=[]
+        self.bbox_utm=[]
         request_url=self.url+"/relation/"+self.relation
         # get relation xml
         opener=urllib.request.build_opener()
@@ -375,7 +414,7 @@ class trace:
             output_directory="/var/www/html/osm/relation/"
             wget.download(fallback_url, out=output_directory)   
         # create a dict for the trace
-        # refactor: add multiple relations 
+        # REFACTOR: add multiple relations 
         trace=dict()
         trace={"relations":{self.relation:None}}
         trace["relations"][self.relation]=dict()

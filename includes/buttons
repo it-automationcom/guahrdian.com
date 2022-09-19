@@ -1,7 +1,14 @@
-  <button type="button" onclick="disable()">Disable Map </button>
-  <button type="button" onclick="enable()">Enable Map </button>
-  <button type="button" onclick="disable_layers()">Disable Maplayers</button>
-  <button type="button" onclick="enable_layers()">Enable Maplayers</button>
+  <div class="floating">
+  <button id="btn1" type="button" onclick="disable()">Disable Map </button>
+  <button id="btn2" type="button" onclick="enable()">Enable Map </button>
+  <button id="btn3" type="button" onclick="disable_layers()">Disable Maplayers</button>
+  <button id="btn4" type="button" onclick="enable_layers()">Enable Maplayers</button>
+  <button id="btn5" type="button" onclick="enable_layer0()">Enable Layer 0 </button>
+  <button id="btn6" type="button" onclick="disable_layer0()">Disable Layer 0 </button>
+  <button id="btn7" type="button" onclick="enable_layer1()">Enable Layer 1 </button>
+  <button id="btn8" type="button" onclick="disable_layer1()">Disable Layer 1 </button>
+  <button id="btn9" type="button" onclick="enable_layer2()">Enable Layer 2 </button>
+  <button id="btn10" type="button" onclick="disable_layer2()">Disable Layer 2 </button>
   <!--<button type="button" onclick="alert('No Function!')">Disable/Enable Layer 4 </button>
   <button type="button" onclick="alert('No Function!')">Disable/Enable Layer 5 </button>
   <button type="button" onclick="alert('No Function!')">Disable/Enable Layer 6 </button>
@@ -9,3 +16,4 @@
   <button type="button" onclick="alert('No Function!')">Disable/Enable Layer 8 </button>
   <button type="button" onclick="alert('No Function!')">Disable/Enable Layer 9 </button>
   -->
+  </div>

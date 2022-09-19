@@ -1,0 +1,25 @@
+#!/usr/bin/python3
+
+import dgm
+import osm
+import utm
+from geopy.geocoders import Nominatim
+
+#{{{setup map
+try:
+    nominatim = Nominatim(user_agent="tutorial")
+    location=nominatim.geocode("Dernau, Ahrweiler"+" ,Rheinland-Pfalz").raw
+except:
+    print("Exception")
+    pass
+lat=float(location["lat"])
+lon=float(location["lon"])
+map0=osm.map()
+map0.set_boundaries(2,2,2,2)
+map0.from_deg(lon,lat,16)
+maplayer0=osm.maplayer(map0)
+map0.calculate()
+#}}}
+
+mesh=dgm.grid(25)
+mesh.load_from_bbox_utm(maplayer0.get_bbox_utm())

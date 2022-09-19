@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import osm
+import geopy.distance
 
 returncode=0
 def check(name,expected,got):
@@ -25,8 +26,19 @@ def result(returncode):
         print("\033[1;30;41m Failed \033[0;0m", flush=True)
         return(1)
 
-liersbach=osm.trace("http://localhost:8000/osm",3251441)
-#print(sahrbach.get_points())
+#liersbach=osm.trace("http://localhost:8000/osm",3251441)
+river=osm.trace("http://localhost:8000/osm",318372)
+#print(ahr.get_points())
+distance=0
+points=river.get_points()
+previous=points[0]
+total=0
+for i in points:
+    distance=geopy.distance.geodesic(previous,i).km
+    total=total+distance
+    print(total)
+    previous=i
+
 
 
 result(returncode)
