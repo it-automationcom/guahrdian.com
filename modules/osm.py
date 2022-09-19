@@ -81,6 +81,16 @@ class tile:
       root_lon=self.deg["NW"]["lon"]
       return(root_lon)
 #}}}
+#{{{get_corner_deg
+    def get_corner_deg(self,corner):
+      deg=self.deg[corner]
+      return(deg)
+#}}}
+#{{{get_corner_utm
+    def get_corner_utm(self,corner):
+      utm=self.utm[corner]
+      return(utm)
+#}}}
 #{{{get_tile
     def get_tile(self,axis):
       tile=self.meta[axis]
@@ -131,13 +141,14 @@ class tile:
 #}}}
 #{{{print
     def print(self):
-      print("self.meta:",self.meta)
-      print("")
-      print("self.deg:",self.deg)
-      print("")
-      print("self.utm:",self.utm)
-      print("")
-      print("self.size:", self.size) #}}}
+      print("<pre>")
+      print("Tile")
+      print("   self.meta:",self.meta)
+      print("   self.deg:",self.deg)
+      print("   self.utm:",self.utm)
+      print("   self.size:", self.size) 
+      print("</pre>")
+      #}}}
 #}}}
 #{{{map
 class map:
@@ -150,6 +161,8 @@ class map:
                 "SE":{"dist":{"x":1,"y":1}},"tile":None,
                 "SW":{"dist":{"x":1,"y":1}},"tile":None,
                 "C":{"dist":{"x":0,"y":0}},"tile":None}
+    self.bbox_deg=[]
+    self.bbox_utm=[]
 #}}}
 #{{{from_deg
   def from_deg(self,lat,lon,zoom):
@@ -201,6 +214,14 @@ class map:
     root_tile=self.nw.get_tile(axis)
     return(root_tile)
 #}}}
+#{{{get_bbox_deg
+  def get_bbox_deg(self):
+    return(self.bbox_deg)
+#}}}
+#{{{get_bbox_utm
+  def get_bbox_utm(self):
+    return(self.bbox_utm)
+#}}}
 #{{{get_zoom
   def get_zoom(self):
     return(self.zoom)
@@ -213,6 +234,17 @@ class map:
       for j in range(self.offset["NW"]["tile"].meta["x"],self.offset["SE"]["tile"].meta["x"]+1,1):
         newtile=tile(self.offset["C"]["tile"].meta["zoom"])
         newtile.from_tile(j,i)
+        if i == self.offset["NW"]["tile"].meta["y"] and j == self.offset["NW"]["tile"].meta["x"]:
+                #print("Found the NW corner of the map")
+                #newtile.print()
+                self.bbox_deg.append(newtile.get_corner_deg("NW"))
+                self.bbox_utm.append(newtile.get_corner_utm("NW"))
+        if i == self.offset["SE"]["tile"].meta["y"] and j == self.offset["SE"]["tile"].meta["x"]:
+                #print("Found the SE corner of the map")
+                #newtile.print()
+                self.bbox_deg.append(newtile.get_corner_deg("SE"))
+                # FIXME: need to get all 4 corners because UTM may be slanted in regards to WGS84
+                self.bbox_utm.append(newtile.get_corner_utm("SE"))
         self.tiles[i][j]=newtile
     print("<table>")
     for y,value in self.tiles.items():
@@ -239,8 +271,15 @@ class map:
 #}}}
 #{{{print
   def print(self):
-    print("self.size:",self.size)
-    print("self.offset:",self.offset)
+    print("<pre>")
+    print("Map:")
+    print("  self.zoom:",self.zoom)
+    print("  self.size:",self.size)
+    print("  self.offset:",self.offset)
+    print("  self.tiles:",self.tiles)
+    print("  self.bbox_deg:",self.bbox_deg)
+    print("  self.bbox_utm:",self.bbox_utm)
+    print("</pre>")
 #}}}
 #}}}
 #{{{maplayer
@@ -299,17 +338,20 @@ class maplayer:
          y=str(j["y"])
          polygon=polygon+" "+x+","+y
        print("<g id=\"polyline\">")
-       print("<polyline points=\""+polygon+"\" style=\"fill:red;fill-opacity:30%;stroke:none;stroke-width:1\"/>")
+       print("<polyline points=\""+polygon+"\" style=\"fill:blue;fill-opacity:30%;stroke:none;stroke-width:1\"/>")
        print("</g>")
      print("</svg>")
 #}}}
 #{{{print
   def print(self):
-    print("self.size:",self.size)
-    print("<br>")
-    print("self.root:",self.root)
-    print("<br>")
-    print("self.points:",self.points[:5],"...")
+    print("<pre>")
+    print("Maplayer:")
+    print("  self.size:",self.size)
+    print("  self.root:",self.root)
+    print("  self.points:",len(self.points))
+    print("  self.polylines:",len(self.polylines))
+    print("  self.polygons:",len(self.polygons))
+    print("</pre>")
 
 #}}}
 #}}}
@@ -446,6 +488,7 @@ class point:
     self.x=int((tile.lon2xpos(None,self.deg["lon"],self.zoom)-self.maplayer.get_root_tile("x"))*256)
     self.y=int((tile.lat2ypos(None,self.deg["lat"],self.zoom)-self.maplayer.get_root_tile("y"))*256)
     self.maplayer.add_point(self.x,self.y)
+    self.utm=utm.from_latlon(lat,lon)
 #}}}
 #{{{from_utm
   def from_utm(self,e,n,zone,hemi):
@@ -455,10 +498,13 @@ class point:
 #}}}
 #{{{print
   def print(self):
-    print("self.deg:",self.deg)
-    print("self.utm:",self.utm)
-    print("self.x:", self.x)
-    print("self.y:",self.y)
+    print("<pre>")
+    print("Point")
+    print("  self.deg:",self.deg)
+    print("  self.utm:",self.utm)
+    print("  self.x:", self.x)
+    print("  self.y:",self.y)
+    print("</pre>")
 #}}}
 #}}}
 #{{{polyline

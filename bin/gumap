@@ -6,6 +6,9 @@ import pbf
 import configparser
 import os
 import utm
+from geopy.geocoders import Nominatim
+import time
+from pprint import pprint
 
 #}}}
 #{{{parse config
@@ -15,9 +18,14 @@ config.read(configfile)
 output_html=config['dev']['output']
 #}}}
 #{{{setup map
+nominatim = Nominatim(user_agent="tutorial")
+location=nominatim.geocode("Altenahr, Ahrweiler"+" ,Rheinland-Pfalz").raw
+lat=float(location["lat"])
+lon=float(location["lon"])
 map0=osm.map()
-map0.set_boundaries(1,3,2,2)
-map0.from_deg(6.99,50.516,16)
+map0.set_boundaries(2,4,2,2)
+#map0.from_deg(6.99,50.516,14)
+map0.from_deg(lon,lat,15)
 #}}}
 #{{{add maplayers to map
 maplayer0=osm.maplayer(map0)
@@ -27,81 +35,38 @@ maplayer3=osm.maplayer(map0)
 maplayer4=osm.maplayer(map0)
 maplayer5=osm.maplayer(map0)
 #}}}
-#{{{grid
-#for i in range(-180,180+1,1):
-#  lons=[[90,i],[-90,i]]
-#  polyline7=osm.polyline(lons,maplayer5)
-#for i in range(-90,90+1,1):
-#  lats=[[i,-180],[i,180]]
-#  polyline7=osm.polyline(lats,maplayer5)
-#}}}
 #{{{rivers
 for i in config['rivers']:
     river=osm.trace("http://localhost:8000/osm/",i)
     polyline5=osm.polyline(river.get_points(),maplayer5)
     del river
-
-#print(ahr_river.get_points())
-#for i in ahr_river.get_points():
-#    lon=float(i[0])
-#    lat=float(i[1])
-#    point0=osm.point(maplayer5)
-#    point0.from_deg(lat,lon)
-#wied_river=osm.trace("http://localhost:8000/osm/",410311)
-#polyline6=osm.polyline(wied_river.points,maplayer5)
-
-#points=osm.trace.nodes()
-#
-#for i in points:
-#  lon=float(i[0])
-#  lat=float(i[1])
-#  point0=osm.point(maplayer0)
-#  point0.from_deg(lat,lon)
-#polyline0=osm.polyline(points,maplayer1)
-#shadow0=osm.shadow(points,maplayer1)
-#}}}
-#{{{pbf trace
-#river=pbf.trace(3244913)
-#river_pbf=river.get_points()
-#polyline2=osm.polyline(river_pbf,maplayer3)
-#for i in (318372,3151697):
-#    obj1=pbf.trace(i)
-#    pbf1=obj1.get_points()
-#    polyline1=osm.polyline(pbf1,maplayer4)
 #}}}
 #{{{single points
 point1=osm.point(maplayer0)
-point1.from_deg(7,50.2)
+point1.from_deg(lon,lat)
 #}}}
 #{{{zone by altitude
-# Shade by Altitude 
-#for j in range(150,540,20):
-    #mesh=dgm.grid(25)
-    #mesh.zones(-j)
-    #E=35
-    #N=559
-    #alt=mesh.alt_from_utm(E,N)
-    #zones=mesh.zones_from_utm(357300.0,5595000.0)
-    #for i in zones:
-        #polygon1=osm.polygon(i,maplayer5)
-        #del polygon1
-    #del mesh
 mesh=dgm.grid(25)
-mesh.zones(-170)
-E=35
-N=559
+mesh.zones(-125)
+E=point1.utm[0]
+N=point1.utm[1]
+print(E)
+print(N)
+#E=35
+#N=559
 alt=mesh.alt_from_utm(E,N)
+mesh.interpolation(1)
 zones=mesh.zones_from_utm(357300.0,5595000.0)
 for i in zones:
    polygon1=osm.polygon(i,maplayer5)
    del polygon1
 del mesh
-
-#for i in mesh.get_point_cloud():
-#    point3=osm.point(maplayer0)
-#    point3.from_deg(i[1],i[0])
-#polyline7=osm.polyline(flood_zone_deg,maplayer5)
-#polygon1=osm.polygon(flood_zone_deg,maplayer5)
+#}}}
+#{{{full map zone
+mesh=dgm.grid(25)
+mesh.load_from_bbox_utm(map0.get_bbox_utm())
+print(map0.get_bbox_utm())
+mesh.load_from_bbox_utm("test")
 #}}}
 #{{{write map to file
 with open(output_html, mode="wt") as f:
@@ -120,21 +85,11 @@ with open(output_html, mode="wt") as f:
     maplayer4.display()
     maplayer5.display()
     map0.display()
-    print("Map")
-    print("<br>")
+    print("</div>")
+    print("</div>")
     map0.print()
-    print("<br>")
-    print("Maplayer")
-    print("<br>")
+    point1.print()
     maplayer0.print()
-    print("<br>")
-    print("Point")
-    print("<br>")
-    #point0.print()
-    print("<br>")
-    #point1.print()
-    print("</div>")
-    print("</div>")
     print("</body></html>")
     #}}}
 # vim:foldmethod=marker:foldlevel=0

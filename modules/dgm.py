@@ -26,8 +26,8 @@ class grid:
       n=int(str(n)+str(0))
     for i in range(len(str(e)),7,1):
       e=int(str(e)+str(0))
-    grid_n=round(n)
-    grid_e=round(e)
+    grid_n=self.fit_grid(n)
+    grid_e=self.fit_grid(e)
     self.name=str(grid_n)[:2]+str(0)+str(grid_e)[:3]+str(0)
     self.file="/var/www/html/dgm/"+str(self.mesh)+"/DGM"+str(self.mesh)+"_"+str(self.name)+".xyz"
     file_location=os.path.join('data',self.file)
@@ -40,8 +40,15 @@ class grid:
       self.xyz[float(y[0])][float(y[1])]=float(y[2])
     self.dataframe=pd.DataFrame.from_dict(self.xyz)
     return self.xyz[float(grid_n)][float(grid_e)]
-  def round(self,x):
-    return self.mesh * round(x/base)
+#}}}
+#{{{load_from_bbox_deg
+  def load_from_bbox_deg(self,bbox):
+      print(bbox)
+#}}}
+#{{{load_from_bbox_utm
+  def load_from_bbox_utm(self,bbox):
+      print("Bounding box")
+      print(bbox)
 #}}}
 #{{{alt_from_deg
   def alt_from_deg(self,lat,lon):
@@ -59,6 +66,10 @@ class grid:
     alt=self.alt_from_utm(N,E)
     print(alt)
 
+#}}}
+#{{{fit_grid
+  def fit_grid(self,x):
+    return self.mesh * round(x/self.mesh)
 #}}}
 #{{{generate_stl
   def generate_stl(self):
@@ -257,6 +268,23 @@ class grid:
 #}}}
 #}}}
 #{{{interpolation
-
+  def interpolation(self,step):
+      df=self.dataframe
+      #df.rename_axis("East", axis=0, inplace=True)
+      #df.rename_axis("North", axis=1, inplace=True)
+      idx_first=int(df.index[0])
+      idx_last=int(df.index[-1])
+      col_first=int(df.columns[0])
+      col_last=int(df.columns[-1])
+      idf=pd.DataFrame(index=range(idx_first,idx_last+1,step),columns=range(col_first,col_last+1,step))
+      ndf=df.reindex_like(idf,method=None)
+      ndf.interpolate(axis=0,inplace=True)
+      ndf.interpolate(axis=1,inplace=True)
+      #ndf.rename_axis("East", axis=0, inplace=True)
+      #ndf.rename_axis("North", axis=1, inplace=True)
+      self.dataframe=ndf
+#      print(df)
+#      print(ndf)
+      self.mesh=step
 #}}}
 # vim:foldmethod=marker:foldlevel=0
