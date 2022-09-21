@@ -2,6 +2,9 @@
 
 import osm
 import geopy.distance
+import river
+import matplotlib.pyplot as plt
+from scipy.signal import savgol_filter
 
 returncode=0
 def check(name,expected,got):
@@ -27,18 +30,21 @@ def result(returncode):
         return(1)
 
 #liersbach=osm.trace("http://localhost:8000/osm",3251441)
-river=osm.trace("http://localhost:8000/osm",318372)
-#print(ahr.get_points())
-distance=0
-points=river.get_points()
-previous=points[0]
-total=0
-for i in points:
-    distance=geopy.distance.geodesic(previous,i).km
-    total=total+distance
-    print(total)
-    previous=i
-
-
+river_trace=osm.trace("http://localhost:8000/osm",318372)
+#river_trace=osm.trace("http://localhost:8000/osm",3314649)
+#river_trace=osm.trace("http://localhost:8000/osm",318375)
+points=river_trace.get_points()
+traced=river.river(points)
+alts=traced.get_altitudes()
+dist=traced.get_distance()
+dists=traced.get_distances()
+bears=traced.get_bearings()
+#plt.plot(alts)
+smooth=savgol_filter(alts,51,3)
+#plt.plot(dist,alts)
+plt.plot(dist,smooth)
+plt.plot(dist,bears)
+#plt.plot(dist,dists)
+plt.show()
 
 result(returncode)

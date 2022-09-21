@@ -21,25 +21,22 @@ class grid:
     self.dataframe=None
 #}}}
 #{{{alt_from_utm
-  def alt_from_utm(self,n,e):
-    for i in range(len(str(n)),6,1):
-      n=int(str(n)+str(0))
-    for i in range(len(str(e)),7,1):
-      e=int(str(e)+str(0))
-    grid_n=self.fit_grid(n)
-    grid_e=self.fit_grid(e)
-    self.name=str(grid_n)[:2]+str(0)+str(grid_e)[:3]+str(0)
-    self.file="/var/www/html/dgm/"+str(self.mesh)+"/DGM"+str(self.mesh)+"_"+str(self.name)+".xyz"
-    file_location=os.path.join('data',self.file)
-    xyz_file = np.genfromtxt(fname=file_location, dtype='unicode')
-    coordinates = (xyz_file[:,:])
-    self.xyz={}
-    for x in coordinates:
-      self.xyz[float(x[0])]={}
-    for y in coordinates:
-      self.xyz[float(y[0])][float(y[1])]=float(y[2])
-    self.dataframe=pd.DataFrame.from_dict(self.xyz)
-    return self.xyz[float(grid_n)][float(grid_e)]
+  def alt_from_utm(self,utm):
+      N=float(self.fit_grid(utm[0]))
+      E=float(self.fit_grid(utm[1]))
+      try:
+          alt=self.dataframe.loc[E,N]
+      except:
+          alt=None
+      return(alt)
+#}}}
+#{{{alt_from_deg
+  def alt_from_deg(self,location):
+      lat=float(location[0])
+      lon=float(location[1])
+      location_utm=utm.from_latlon(lat,lon)
+      alt=self.alt_from_utm(location_utm)
+      return(alt)
 #}}}
 #{{{load_from_bbox_deg
   def load_from_bbox_deg(self,bbox):
@@ -71,7 +68,7 @@ class grid:
             for y in coordinates:
               self.xyz[float(y[0])][float(y[1])]=float(y[2])
       self.dataframe=pd.DataFrame.from_dict(self.xyz)
-      print(self.dataframe)
+      #print(self.dataframe)
       df_min_e=int(self.dataframe.index[0])
       df_max_e=int(self.dataframe.index[-1])
       df_min_n=int(self.dataframe.columns[0])
@@ -94,23 +91,6 @@ class grid:
       print(max_n)
       self.dataframe=self.dataframe.loc[min_e:max_e,min_n:max_n]
 #      print(self.dataframe)
-#}}}
-#{{{alt_from_deg
-  def alt_from_deg(self,lat,lon):
-    print("Altitude from deg")
-    print(lat)
-    print(lon)
-    # convert lat lon to utm
-    node_utm=utm.from_latlon(lat,lon)
-    print(node_utm)
-    # convert lat lon to utm and invoke self.alt_from_utm
-    N=node_utm[1]
-    print(N)
-    E=node_utm[0]
-    print(E)
-    alt=self.alt_from_utm(N,E)
-    print(alt)
-
 #}}}
 #{{{fit_grid
   def fit_grid(self,x):
