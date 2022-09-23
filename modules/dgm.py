@@ -85,12 +85,20 @@ class grid:
           min_n=df_min_n
       if df_max_n < max_n:
         max_n=df_max_n
-      print(df_min_n)
-      print(min_n)
-      print(df_max_n)
-      print(max_n)
+      #print(df_min_n)
+      #print(min_n)
+      #print(df_max_n)
+      #print(max_n)
       self.dataframe=self.dataframe.loc[min_e:max_e,min_n:max_n]
 #      print(self.dataframe)
+#}}}
+#{{{inject_dataframe
+  def inject_dataframe(self,dataframe):
+      self.dataframe=dataframe
+#}}}
+#{{{get_dataframe
+  def get_dataframe(self):
+      return(self.dataframe)
 #}}}
 #{{{fit_grid
   def fit_grid(self,x):
@@ -239,17 +247,18 @@ class grid:
     labeled_df=pd.DataFrame(labeled_zones)
     labeled_df.set_axis(list(self.zones.axes[0]), axis=0, inplace=True)
     labeled_df.set_axis(list(self.zones.axes[1]), axis=1, inplace=True)
-    #print(labeled_df)
     #}}} 
     #{{{loop over distinct features
     objects=ndimage.find_objects(labeled_df)
     polygons_utm=[]
     polygons_deg=[]
     for i in range(len(objects)):
-        #print("Run algorithm for Object", i)
         ##{{{get slice
         iloc=objects[i]
+        #print("labeled_df")
+        #print(labeled_df)
         sliced=labeled_df.iloc[iloc].isin([i+1]).astype(int)
+        #print("sliced")
         #print(sliced)
         N0=sliced.columns[0]
         E0=sliced.index[0]
@@ -277,8 +286,8 @@ class grid:
                     try:
                         #E=sliced.index[idx]
                         #N=sliced.columns[col]
-                        E=E0+idx*self.mesh
-                        N=N0+col*self.mesh
+                        E=E0[0]+idx*self.mesh
+                        N=N0[0]+col*self.mesh
                         polygon_utm.append([N,E])
                         utm_zone=32
                         utm_hemi="U"

@@ -2,6 +2,7 @@
 #{{{import
 import osm
 import dgm
+import river as ri
 import pbf
 import configparser
 import os
@@ -9,7 +10,6 @@ import utm
 from geopy.geocoders import Nominatim
 import time
 from pprint import pprint
-
 #}}}
 #{{{parse config
 config=configparser.ConfigParser()
@@ -26,7 +26,7 @@ lon=float(location["lon"])
 map0=osm.map()
 map0.set_boundaries(2,2,2,2)
 #map0.from_deg(6.99,50.516,14)
-map0.from_deg(lon,lat,13)
+map0.from_deg(lon,lat,15)
 #}}}
 #{{{add maplayers to map
 maplayer0=osm.maplayer(map0)
@@ -55,6 +55,26 @@ mesh=dgm.grid(25)
 mesh.zones(-150)
 map0.calculate()
 mesh.load_from_bbox_utm(maplayer0.get_bbox_utm())
+#mesh.interpolation(1)
+zones=mesh.zones_from_utm(357300.0,5595000.0)
+maplayer0.set_name("layer0")
+for i in zones:
+   polygon1=osm.polygon(i,maplayer0)
+   del polygon1
+del mesh
+#}}}
+#{{{flood_zone ahr
+river_trace=osm.trace("http://localhost:8000/osm",318372)
+points=river_trace.get_points()
+traced=ri.river(points)
+traced.load_dataframe()
+mesh=dgm.grid(25)
+map0.calculate()
+mesh.load_from_bbox_utm(maplayer0.get_bbox_utm())
+#print("Vischelbach Flood Zones")
+#print("")
+mesh.inject_dataframe(traced.get_dataframe())
+mesh.zones(-9)
 #mesh.interpolation(1)
 zones=mesh.zones_from_utm(357300.0,5595000.0)
 maplayer0.set_name("layer0")

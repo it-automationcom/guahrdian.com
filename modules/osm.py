@@ -349,28 +349,36 @@ class maplayer:
   def display(self):
      print("<div id=\""+str(self.name)+"\">")
      print("<svg width=\""+str(self.size["x"])+"\" height=\""+str(self.size["y"])+"\" style=\"position:absolute; left:0; top:0\" z-index:100>")
+     points_count=0
      for i in self.points:
+       points_count=points_count+1 
        x=i["x"]
        y=i["y"]
        #cross=str(str(x-10)+","+str(y-10)+" "+str(x+10)+","+str(y+10)+" "+str(x)+","+str(y)+" "+str(x+10)+","+str(y-10)+" "+str(x-10)+","+str(y+10))
        cross=str(str(x-5)+","+str(y-5)+" "+str(x+5)+","+str(y+5)+" "+str(x)+","+str(y)+" "+str(x+5)+","+str(y-5)+" "+str(x-5)+","+str(y+5))
+       print("<g id=\"point"+str(points_count)+"\">")
        print("<polyline points=\""+cross+"\" style=\"fill:none;stroke:blue;stroke-width:1.5\"/>")
+       print("</g>")
+     polyline_count=0
      for i in self.polylines:
+       polyline_count=polyline_count+1
        polyline=""
        for j in i:
          x=str(j["x"])
          y=str(j["y"])
          polyline=polyline+" "+x+","+y
-       print("<g id=\"polyline\">")
+       print("<g id=\"polyline"+str(polyline_count)+"\">")
        print("<polyline points=\""+polyline+"\" style=\"fill:none;stroke:blue;stroke-opacity:40%\"/>")
        print("</g>")
+     polygon_count=0
      for i in self.polygons:
+       polygon_count=polygon_count+1
        polygon=""
        for j in i:
          x=str(j["x"])
          y=str(j["y"])
          polygon=polygon+" "+x+","+y
-       print("<g id=\"polyline\">")
+       print("<g id=\"polygon"+str(polygon_count)+"\">")
        print("<polyline points=\""+polygon+"\" style=\"fill:blue;fill-opacity:30%;stroke:none;stroke-width:1\"/>")
        print("</g>")
      print("</svg>")
