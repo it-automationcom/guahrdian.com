@@ -8,8 +8,11 @@ import configparser
 import os
 import utm
 from geopy.geocoders import Nominatim
+from geographiclib.geodesic import Geodesic as glc
 import time
 from pprint import pprint
+import sys
+
 #}}}
 #{{{parse config
 config=configparser.ConfigParser()
@@ -21,12 +24,14 @@ output_html=config['dev']['output']
 nominatim = Nominatim(user_agent="tutorial")
 #location=nominatim.geocode("Altenahr, Ahrweiler"+" ,Rheinland-Pfalz").raw
 location=nominatim.geocode("Dernau, Ahrweiler"+" ,Rheinland-Pfalz").raw
+#location=nominatim.geocode("Insul, Ahrweiler"+" ,Rheinland-Pfalz").raw
+#location=nominatim.geocode("Boppard"+" ,Rheinland-Pfalz").raw
 lat=float(location["lat"])
 lon=float(location["lon"])
 map0=osm.map()
-map0.set_boundaries(2,2,2,2)
+map0.set_boundaries(2,2,2,3)
 #map0.from_deg(6.99,50.516,14)
-map0.from_deg(lon,lat,15)
+map0.from_deg(lon,lat,14)
 #}}}
 #{{{add maplayers to map
 maplayer0=osm.maplayer(map0)
@@ -50,12 +55,101 @@ point2.from_deg(8.08,50.28)
 point3=osm.point(maplayer0)
 point3.from_deg(7.207,50.28)
 #}}}
+#{{{clip-path for 3D texture
+nw=osm.point(maplayer0)
+nw.from_utm(5600000,350000,32,"U")
+ne=osm.point(maplayer0)
+ne.from_utm(5600000,360000,32,"U")
+se=osm.point(maplayer0)
+se.from_utm(5590000,360000,32,"U")
+sw=osm.point(maplayer0)
+sw.from_utm(5590000,350000,32,"U")
+nw.print()
+ne.print()
+se.print()
+sw.print()
+nw_x=str(nw.get_x())
+nw_y=str(nw.get_y())
+ne_x=str(ne.get_x())
+ne_y=str(ne.get_y())
+se_x=str(se.get_x())
+se_y=str(se.get_y())
+sw_x=str(sw.get_x())
+sw_y=str(sw.get_y())
+clip_path=nw_x+"px"+" "+nw_y+"px,"+ne_x+"px"+" "+ne_y+"px,"+se_x+"px"+" "+se_y+"px,"+sw_x+"px"+" "+sw_y+"px"
+print(clip_path)
+
+
+#}}}
+#{{{utm grid
+for i in range(5300000,6200000+1,10000):
+    utm_grid=[]
+    for j in range(300000,700000+1,10000):
+        point4=osm.point(maplayer0)
+        point4.from_utm(i,j,32,"U")
+        lat=point4.get_deg()["lat"]
+        lon=point4.get_deg()["lon"]
+        utm_grid.append([lat,lon])
+    polyline6=osm.polyline(utm_grid,maplayer5)
+for j in range(300000,700000+1,10000):
+    utm_grid=[]
+    for i in range(5300000,6200000+1,10000):
+        point4=osm.point(maplayer0)
+        point4.from_utm(i,j,32,"U")
+        lat=point4.get_deg()["lat"]
+        lon=point4.get_deg()["lon"]
+        utm_grid.append([lat,lon])
+    polyline6=osm.polyline(utm_grid,maplayer5)
+map0.calculate()
+bbox_utm=maplayer5.get_bbox_utm()
+min_e=min(bbox_utm, key=lambda item:item[0])[0]
+max_e=max(bbox_utm, key=lambda item:item[0])[0]
+length_e=max_e-min_e
+print(length_e)
+min_n=min(bbox_utm, key=lambda item:item[1])[1]
+max_n=max(bbox_utm, key=lambda item:item[1])[1]
+length_n=max_n-min_n
+print(length_n)
+# calculate skewness
+## nw to ne
+nw=utm.to_latlon(min_e,max_n,32,"U")
+ne=utm.to_latlon(max_e,max_n,32,"U")
+se=utm.to_latlon(max_e,min_n,32,"U")
+sw=utm.to_latlon(min_e,min_n,32,"U")
+rela=glc.WGS84.Inverse(nw[0],nw[1],ne[0],ne[1])
+skew_n=rela["azi1"]
+print(skew_n)
+rela=glc.WGS84.Inverse(se[0],se[1],ne[0],ne[1])
+skew_e=rela["azi1"]
+print(skew_e)
+rela=glc.WGS84.Inverse(sw[0],sw[1],se[0],se[1])
+skew_s=rela["azi1"]
+print(skew_s)
+rela=glc.WGS84.Inverse(sw[0],sw[1],nw[0],nw[1])
+skew_w=rela["azi1"]
+print(skew_w)
+para_sn=skew_e-skew_w
+print("Parallelism S-N (expected: 0)")
+print(para_sn)
+para_we=skew_n-skew_s
+print("Parallelism W-E (expected: 0)")
+print(para_we)
+        #bear=glc.WGS84.Inverse(float(previous[0]),float(previous[1]),float(i[0]),float(i[1]))
+        #previous=i
+        #azi=bear["azi1"]
+#}}}
 #{{{zone by altitude
 mesh=dgm.grid(25)
-mesh.zones(-150)
+mesh.zones(200)
 map0.calculate()
 mesh.load_from_bbox_utm(maplayer0.get_bbox_utm())
-#mesh.interpolation(1)
+orig_stdout=sys.stdout
+f=open('/var/www/html/cache/map.stl', 'w')
+sys.stdout=f
+mesh.interpolation(5)
+mesh.generate_stl()
+sys.stdout=orig_stdout
+f.close()
 zones=mesh.zones_from_utm(357300.0,5595000.0)
 maplayer0.set_name("layer0")
 for i in zones:
@@ -64,35 +158,179 @@ for i in zones:
 del mesh
 #}}}
 #{{{flood_zone ahr
-river_trace=osm.trace("http://localhost:8000/osm",318372)
-points=river_trace.get_points()
-traced=ri.river(points)
-traced.load_dataframe()
-mesh=dgm.grid(25)
-map0.calculate()
-mesh.load_from_bbox_utm(maplayer0.get_bbox_utm())
-#print("Vischelbach Flood Zones")
-#print("")
-mesh.inject_dataframe(traced.get_dataframe())
-mesh.zones(-9)
-#mesh.interpolation(1)
-zones=mesh.zones_from_utm(357300.0,5595000.0)
-maplayer0.set_name("layer0")
-for i in zones:
-   polygon1=osm.polygon(i,maplayer0)
-   del polygon1
-del mesh
+#river_trace=osm.trace("http://localhost:8000/osm",318372)
+#points=river_trace.get_points()
+#traced=ri.river(points)
+#traced.load_dataframe()
+#mesh=dgm.grid(25)
+#map0.calculate()
+#mesh.load_from_bbox_utm(maplayer0.get_bbox_utm())
+#mesh.inject_dataframe(traced.get_dataframe())
+#mesh.zones(-1)
+#mesh.interpolation(5)
+#zones=mesh.zones_from_utm(357300.0,5595000.0)
+#maplayer0.set_name("layer0")
+#for i in zones:
+   #polygon1=osm.polygon(i,maplayer0)
+   #del polygon1
+#del mesh
+#}}}
+#{{{flood_zone ahr
+#river_trace=osm.trace("http://localhost:8000/osm",318372)
+#points=river_trace.get_points()
+#traced=ri.river(points)
+#traced.load_dataframe()
+#mesh=dgm.grid(25)
+#map0.calculate()
+#mesh.load_from_bbox_utm(maplayer1.get_bbox_utm())
+#mesh.inject_dataframe(traced.get_dataframe())
+#mesh.zones(-2)
+#mesh.interpolation(5)
+#zones=mesh.zones_from_utm(357300.0,5595000.0)
+#maplayer1.set_name("layer1")
+#for i in zones:
+#   polygon1=osm.polygon(i,maplayer1)
+#   del polygon1
+#del mesh
+#}}}
+#{{{flood_zone ahr
+#river_trace=osm.trace("http://localhost:8000/osm",318372)
+#points=river_trace.get_points()
+#traced=ri.river(points)
+#traced.load_dataframe()
+#mesh=dgm.grid(25)
+#map0.calculate()
+#mesh.load_from_bbox_utm(maplayer2.get_bbox_utm())
+#mesh.inject_dataframe(traced.get_dataframe())
+#mesh.zones(-3)
+#mesh.interpolation(5)
+#zones=mesh.zones_from_utm(357300.0,5595000.0)
+#maplayer2.set_name("layer2")
+#for i in zones:
+#   polygon1=osm.polygon(i,maplayer2)
+#   del polygon1
+#del mesh
+#}}}
+#{{{flood_zone ahr
+#river_trace=osm.trace("http://localhost:8000/osm",318372)
+#points=river_trace.get_points()
+#traced=ri.river(points)
+#traced.load_dataframe()
+#mesh=dgm.grid(25)
+#map0.calculate()
+#mesh.load_from_bbox_utm(maplayer3.get_bbox_utm())
+#mesh.inject_dataframe(traced.get_dataframe())
+#mesh.zones(-4)
+#mesh.interpolation(5)
+#zones=mesh.zones_from_utm(357300.0,5595000.0)
+#maplayer3.set_name("layer3")
+#for i in zones:
+#   polygon1=osm.polygon(i,maplayer3)
+#   del polygon1
+#del mesh
+#}}}
+#{{{flood_zone ahr
+#river_trace=osm.trace("http://localhost:8000/osm",318372)
+#points=river_trace.get_points()
+#traced=ri.river(points)
+#traced.load_dataframe()
+#mesh=dgm.grid(25)
+#map0.calculate()
+#mesh.load_from_bbox_utm(maplayer4.get_bbox_utm())
+#mesh.inject_dataframe(traced.get_dataframe())
+#mesh.zones(-5)
+#mesh.interpolation(5)
+#zones=mesh.zones_from_utm(357300.0,5595000.0)
+#maplayer4.set_name("layer4")
+#for i in zones:
+#   polygon1=osm.polygon(i,maplayer4)
+#   del polygon1
+#del mesh
 #}}}
 #{{{full map zone
 #mesh=dgm.grid(25)
 #map0.calculate()
 #mesh.load_from_bbox_utm(maplayer0.get_bbox_utm())
 #}}}
+#{{{create buttons to be included
+orig_stdout=sys.stdout
+f=open('/home/tk/guahrdian/code/includes/buttons', 'w')
+sys.stdout=f
+print("<div class=\"floating\">")
+print("<button class=\"0\" id=\"map_d\" type=\"button\" onclick=\"map_d()\">Disable Map </button>")
+print("<button class=\"0\" id=\"map_e\" type=\"button\" onclick=\"map_e()\">Enable Map </button>")
+print("<button class=\"1\" id=\"mapl_d\" type=\"button\" onclick=\"mapl_d()\">Disable Maplayers</button>")
+print("<button class=\"1\" id=\"mapl_e\" type=\"button\" onclick=\"mapl_e()\">Enable Maplayers</button>")
+for i in range(6):
+    print("<button class=\"2\" id=\"l"+str(i)+"\" type=\"button\" onclick=\"l"+str(i)+"_d()\">Disable Layer",str(i),"</button>")
+    print("<button class=\"2\" id=\"l"+str(i)+"\" type=\"button\" onclick=\"l"+str(i)+"_e()\">Enable Layer",str(i),"</button>")
+print("<button class=\"2\" id=\"animation\" type=\"button\" onclick=\"animation()\">Animation</button>")
+print("<button class=\"2\" id=\"debug\" type=\"button\" onclick=\"debug()\">Debug</button>")
+print("</div>")
+sys.stdout=orig_stdout
+f.close()
+#}}}
+#{{{create js to be included
+orig_stdout=sys.stdout
+f=open('/home/tk/guahrdian/code/includes/js', 'w')
+sys.stdout=f
+print("<script>")
+print("function map_d(){")
+print("document.getElementsByClassName(\"mapcontainer\")[0].style.display=\"none\";")
+print("document.getElementById(\"map_d\").style.display=\"none\";")
+print("document.getElementById(\"map_e\").style.display=\"block\";")
+print("document.getElementById(\"map_e\").style.background=\"green\";")
+print("const elements=document.getElementsByClassName(\"1\");")
+print("for (const element of elements){")
+print("element.style.display=\"none\";")
+print("}")
+print("}")
+print("function map_e(){")
+print("document.getElementsByClassName(\"mapcontainer\")[0].style.display=\"block\";")
+print("document.getElementById(\"map_e\").style.display=\"none\";")
+print("document.getElementById(\"map_d\").style.display=\"block\";")
+print("document.getElementById(\"map_d\").style.background=\"red\";")
+print("const elements=document.getElementsByClassName(\"1\");")
+print("for (const element of elements){")
+print("element.style.display=\"block\";")
+print("}")
+print("}")
+print("function mapl_d(){")
+print("alert(\"elements\");")
+print("const elements=document.getElementsByTagName(\"svg\");")
+print("for (const element of elements){")
+print("element.style.display=\"none\";")
+print("}")
+print("document.getElementById(\"mapl_d\").style.display=\"none\";")
+print("document.getElementById(\"mapl_e\").style.display=\"block\";")
+print("document.getElementById(\"mapl_e\").style.background=\"green\";")
+print("const elements=document.getElementsByClassName(\"2\");")
+print("for (const element of elements){")
+print("element.style.display=\"none\";")
+print("}")
+print("}")
+print("function mapl_e(){")
+print("document.getElementById(\"mapl_e\").style.display=\"none\";")
+print("document.getElementById(\"mapl_d\").style.display=\"block\";")
+print("document.getElementById(\"mapl_d\").style.background=\"red\";")
+print("}")
+print("</script>")
+sys.stdout=orig_stdout
+f.close()
+#}}}
 #{{{write map to file
+orig_stdout=sys.stdout
+f=open('/var/www/html/cache/map.html', 'w')
+sys.stdout=f
 with open(output_html, mode="wt") as f:
     print("<html><head><link rel=\"stylesheet\" href=\"style.css\"/>")
-    with open('includes/js', 'r') as f:
+    print("<script type=\"text/javascript\" src=\"https://code.jquery.com/jquery-1.11.2.min.js\"></script>")
+    print("<script src=\"gu.js\"></script>")
+    with open('includes/debug', 'r') as f:
         print(f.read())
+    f.close
+    #with open('includes/js', 'r') as f:
+    #    print(f.read())
     print("</head><body>")
     with open('includes/buttons', 'r') as f:
         print(f.read())
@@ -107,9 +345,15 @@ with open(output_html, mode="wt") as f:
     map0.display()
     print("</div>")
     print("</div>")
-    map0.print()
-    point1.print()
-    maplayer0.print()
     print("</body></html>")
+sys.stdout=orig_stdout
+f.close()
+f=open('/var/www/html/cache/debug.html', 'w')
+sys.stdout=f
+map0.print()
+point1.print()
+maplayer0.print()
+sys.stdout=orig_stdout
+f.close()
     #}}}
 # vim:foldmethod=marker:foldlevel=0

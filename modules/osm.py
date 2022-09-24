@@ -237,6 +237,10 @@ class map:
   def get_zoom(self):
     return(self.zoom)
 #}}}
+#{{{get_tiles
+  def get_tiles(self):
+    return(self.tiles)
+#}}}
 #{{{calculate
   def calculate(self):
     self.tiles={}
@@ -368,7 +372,7 @@ class maplayer:
          y=str(j["y"])
          polyline=polyline+" "+x+","+y
        print("<g id=\"polyline"+str(polyline_count)+"\">")
-       print("<polyline points=\""+polyline+"\" style=\"fill:none;stroke:blue;stroke-opacity:40%\"/>")
+       print("<polyline points=\""+polyline+"\" style=\"fill:none;stroke:blue;stroke-width:3;stroke-opacity:40%\"/>")
        print("</g>")
      polygon_count=0
      for i in self.polygons:
@@ -542,6 +546,22 @@ class point:
     deg=utm.to_latlon(n,e,zone,hemi)
     self.utm={"N":n,"E":e}
     self.from_deg(deg[1],deg[0])
+#}}}
+#{{{get_deg
+  def get_deg(self):
+      return(self.deg)
+#}}}
+#{{{get_utm
+  def get_utm(self):
+      return(self.utm)
+#}}}
+#{{{get_x
+  def get_x(self):
+      return(self.x)
+#}}}
+#{{{get_y
+  def get_y(self):
+      return(self.y)
 #}}}
 #{{{print
   def print(self):

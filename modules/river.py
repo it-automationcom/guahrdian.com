@@ -103,17 +103,17 @@ class river:
    rel=z1.__sub__(zi)
    #print(rel)
    #print(rel)
-   print(E)
-   print(type(E.tolist()))
+   #print(E)
+   #print(type(E.tolist()))
    alts_rel=pd.DataFrame(rel,columns=[N.tolist()],index=[E.tolist()])
    #print(self.dataframe)
    self.dataframe=alts_rel
-   print("alts_rel")
-   print(alts_rel.axes[0])
+   #print("alts_rel")
+   #print(alts_rel.axes[0])
    alts_rel.set_axis(E.tolist(),axis=0)
-   print(alts_rel.axes[0])
+   #print(alts_rel.axes[0])
    alts_rel.reindex_like(self.dataframe)
-   print(alts_rel.axes[0])
+   #print(alts_rel.axes[0])
   #}}}
   #{{{fit_grid
   def fit_grid(self,x):

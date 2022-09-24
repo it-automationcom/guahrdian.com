@@ -95,6 +95,10 @@ class grid:
 #{{{inject_dataframe
   def inject_dataframe(self,dataframe):
       self.dataframe=dataframe
+      # FIXME: index gets injected as Multiindex
+      # BUGFIX: flatten index
+      self.dataframe.index=self.dataframe.index.get_level_values(0)
+      self.dataframe.columns=self.dataframe.columns.get_level_values(0)
 #}}}
 #{{{get_dataframe
   def get_dataframe(self):
@@ -117,16 +121,16 @@ class grid:
         for y in range(length_y-1):
             print("facet normal 0 0 0")
             print("   outer loop")
-            print("     vertex", x*25, y*25 , scale*df.iloc[x,y])
-            print("     vertex", x*25+25, y*25 , scale*df.iloc[x+1,y])
-            print("     vertex", x*25, y*25+25 , scale*df.iloc[x,y+1])
+            print("     vertex", x*self.mesh, y*self.mesh , scale*df.iloc[x,y])
+            print("     vertex", x*self.mesh+self.mesh, y*self.mesh , scale*df.iloc[x+1,y])
+            print("     vertex", x*self.mesh, y*self.mesh+self.mesh , scale*df.iloc[x,y+1])
             print("  endloop")
             print("endfacet")
             print("facet normal 0 0 0")
             print("   outer loop")
-            print("     vertex", x*25+25, y*25 , scale*df.iloc[x+1,y])
-            print("     vertex", x*25+25, y*25+25 ,scale*df.iloc[x+1,y+1])
-            print("     vertex", x*25, y*25+25 ,scale*df.iloc[x,y+1])
+            print("     vertex", x*self.mesh+self.mesh, y*self.mesh , scale*df.iloc[x+1,y])
+            print("     vertex", x*self.mesh+self.mesh, y*self.mesh+self.mesh ,scale*df.iloc[x+1,y+1])
+            print("     vertex", x*self.mesh, y*self.mesh+self.mesh ,scale*df.iloc[x,y+1])
             print("  endloop")
             print("endfacet")
     print("endsolid",self.name)
@@ -284,10 +288,12 @@ class grid:
                     idx=int(i[0])
                     col=int(i[1])
                     try:
-                        #E=sliced.index[idx]
-                        #N=sliced.columns[col]
-                        E=E0[0]+idx*self.mesh
-                        N=N0[0]+col*self.mesh
+                        # if Multindex
+                        #E=E0[0]+idx*self.mesh
+                        #N=N0[0]+col*self.mesh
+                        # if flat index
+                        E=E0+idx*self.mesh
+                        N=N0+col*self.mesh
                         polygon_utm.append([N,E])
                         utm_zone=32
                         utm_hemi="U"
