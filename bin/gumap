@@ -59,6 +59,7 @@ debug_flood_zone=bool(config.getboolean('debug', 'flood_zone'))
 debug_3dvisual=bool(config.getboolean('debug', '3dvisual'))
 debug_runoff=bool(config.getboolean('debug', 'runoff'))
 debug_auto=bool(config.getboolean('debug', 'auto'))
+debug_osmium=bool(config.getboolean('debug', 'osmium'))
 
 #}}}
 #{{{output
@@ -208,7 +209,7 @@ if feature_osmium:
     lon1=bbox[0]["lon"]
     lat2=bbox[3]["lat"]
     lon2=bbox[3]["lon"]
-    os.system("osmium extract --overwrite -o /var/www/html/pbf/tmp.pbf -b"+str(lon1)+","+str(lat1)+","+str(lon2)+","+str(lat2)+" /var/www/html/pbf/base.pbf")
+    os.system("osmium extract --set-bounds --overwrite -o /var/www/html/pbf/tmp.pbf -b"+str(lon1)+","+str(lat1)+","+str(lon2)+","+str(lat2)+" /var/www/html/pbf/base.pbf")
     river_names_raw=os.popen("osmium tags-filter /var/www/html/pbf/tmp.pbf nw/waterway -f osm | grep \"name\" | cut -d\"\\\"\" -f4 | sort | uniq").read()
     river_ids=set()
     # FIX: rivers do not neccesarily have to be part of a relation
