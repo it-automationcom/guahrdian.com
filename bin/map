@@ -206,7 +206,7 @@ class map:
         for j in range(self.nw_tile.coordinates.x.abs,self.se_tile.coordinates.x.abs+1,1):
           self.map[i].append(j)
     def print(self):
-      print("<html><head><link rel=\"stylesheet\" href=\"style.css\"/></head><body>")
+      print("<html><head><link rel=\"stylesheet\" href=\"css/style.css\"/></head><body>")
       print("<div class=\"map\">")
       maplayer.print()
       print("<table>")

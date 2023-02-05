@@ -5,6 +5,7 @@ class cache:
     self.url=url
     self.localpath=localpath
     self.remote=remote
+    self.debug=True
   def get(self,path):
     local_path=(self.localpath+"/"+path)
     file_exists=exists(local_path)

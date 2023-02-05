@@ -1,0 +1,17 @@
+#!/usr/bin/python3
+
+import map3d
+import osm
+import dgm
+from geopy.geocoders import Nominatim
+
+nominatim = Nominatim(user_agent="tutorial")
+location=nominatim.geocode("Dernau, Ahrweiler"+" ,Rheinland-Pfalz").raw
+lat=float(location["lat"])
+lon=float(location["lon"])
+map0=osm.map()
+map0.set_boundaries(1,3,1,2)
+map0.from_deg(lon,lat,14)
+map0.calculate()
+map3d.map3d(map0)
+

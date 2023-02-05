@@ -1,39 +1,196 @@
 #!/usr/bin/python3
-#{{{import
+#{{{imports
 import osm
+import osm_objects
 import dgm
 import river as ri
+import runoff
 import pbf
 import configparser
 import os
 import utm
 from geopy.geocoders import Nominatim
 from geographiclib.geodesic import Geodesic as glc
+from geopy.exc import GeocoderTimedOut
 import time
 from pprint import pprint
 import sys
-
+import argparse
+import drawSvg as draw
+import imgkit
+import pyvista  
+import shutil
+import map_overview as mo
 #}}}
-#{{{parse config
+#{{{read config
+#{{{init
 config=configparser.ConfigParser()
 configfile=os.path.dirname(__file__)+'/../config.ini'
 config.read(configfile)
-output_html=config['dev']['output']
 #}}}
-#{{{setup map
+#{{{ features
+feature_arguments=bool(config.getboolean('features', 'arguments'))
+feature_building=bool(config.getboolean('features', 'building'))
+feature_rivers=bool(config.getboolean('features', 'rivers'))
+feature_points=bool(config.getboolean('features', 'points'))
+feature_utm=bool(config.getboolean('features', 'utm'))
+feature_altitude=bool(config.getboolean('features', 'altitude'))
+feature_flood_zone=bool(config.getboolean('features', 'flood_zone'))
+feature_3dvisual=bool(config.getboolean('features', '3dvisual'))
+feature_runoff=bool(config.getboolean('features', 'runoff'))
+feature_osmium=bool(config.getboolean('features', 'osmium'))
+feature_auto=bool(config.getboolean('features', 'auto'))
+feature_info=bool(config.getboolean('features', 'info'))
+feature_osmium=bool(config.getboolean('features', 'osmium'))
+feature_svg=bool(config.getboolean('features', 'svg'))
+feature_web_info=bool(config.getboolean('features', 'web_info'))
+feature_buttons=bool(config.getboolean('features', 'buttons'))
+feature_overview_map=bool(config.getboolean('features', 'overview_map'))
+feature_municipal_boundary=bool(config.getboolean('features', 'municipal_boundary'))
+#}}}
+#{{{debug
+debug_arguments=bool(config.getboolean('debug', 'arguments'))
+debug_building=bool(config.getboolean('debug', 'building'))
+debug_rivers=bool(config.getboolean('debug', 'rivers'))
+debug_points=bool(config.getboolean('debug', 'points'))
+debug_utm=bool(config.getboolean('debug', 'utm'))
+debug_altitude=bool(config.getboolean('debug', 'altitude'))
+debug_flood_zone=bool(config.getboolean('debug', 'flood_zone'))
+debug_3dvisual=bool(config.getboolean('debug', '3dvisual'))
+debug_runoff=bool(config.getboolean('debug', 'runoff'))
+debug_auto=bool(config.getboolean('debug', 'auto'))
+
+#}}}
+#{{{output
+output_directory=config['output']['directory']
+output_mainfile=config['output']['mainfile']
+output_leaflet=config['output']['leaflet']
+output_css_main=config['output']['css_main']
+output_js_main=config['output']['js_main']
+output_buildings_info=config['output']['buildings_info']
+#}}}
+#{{{includes
+includes_directory=config['includes']['directory']
+includes_css_main=config['includes']['css_main']
+includes_js_main=config['includes']['js_main']
+#}}}
+#{{{pbf
+pbf_directory=config['pbf']['directory']
+pbf_base=config['pbf']['base']
+pbf_tmp=config['pbf']['tmp']
+#}}}
+#{{{map
+location_city=config['map']['city']
+location_district=config['map']['district']
+location_federal_state=config['map']['federal_state']
+#}}}
+#{{{mapsize
+mapsize_zoom=int(config['mapsize']['zoom'])
+mapsize_north=int(config['mapsize']['north'])
+mapsize_east=int(config['mapsize']['east'])
+mapsize_south=int(config['mapsize']['south'])
+mapsize_west=int(config['mapsize']['west'])
+#}}}
+#{{{floodzone
+flood_level=float(config['floodzone']['level'])
+#}}}
+#{{{building
+building=str(config['building']['building'])
+#}}}
+#{{{rivers
+rivers_list=config['rivers']
+#}}}
+#}}}
+#{{{read arguments
+if feature_arguments: 
+    if feature_info:
+        print("### Read Arguments ###")
+    parser = argparse.ArgumentParser(
+            prog = 'guAHRdian map',
+            description = 'Creates a guAHRdian map',
+            epilog = 'Protect peoples lives')
+    parser.add_argument('-c', '--city')
+    parser.add_argument('-l', '--level')
+    args = parser.parse_args()
+    if debug_arguments:
+        print("Args",args)
+        print(args.city)
+        print(args.level)
+    if args.city != None:
+        location_city=args.city
+    if args.level != None:
+        flood_level=float(args.level)
+#}}}
+#{{{query nominatim
+if feature_info:
+    print("### Query Nominatim ###")
 nominatim = Nominatim(user_agent="tutorial")
-#location=nominatim.geocode("Altenahr, Ahrweiler"+" ,Rheinland-Pfalz").raw
-location=nominatim.geocode("Dernau, Ahrweiler"+" ,Rheinland-Pfalz").raw
-#location=nominatim.geocode("Insul, Ahrweiler"+" ,Rheinland-Pfalz").raw
-#location=nominatim.geocode("Boppard"+" ,Rheinland-Pfalz").raw
+try:
+    location=nominatim.geocode(location_city+","+location_district+","+location_federal_state).raw
+except NoneType:
+    print("Exception: Unable to find:",location_city, location_district, location_federal_state)
+    sys.exc_clear()
+    pass
+except GeocoderTimedOut:
+    pass
 lat=float(location["lat"])
 lon=float(location["lon"])
+del nominatim
+#}}}
+#{{{ setup map
+if feature_info:
+    print("### Setup Map ###")
 map0=osm.map()
-map0.set_boundaries(2,2,2,3)
-#map0.from_deg(6.99,50.516,14)
-map0.from_deg(lon,lat,14)
+map0.set_boundaries(mapsize_north,mapsize_east,mapsize_south,mapsize_west)
+map0.from_deg(lon,lat,mapsize_zoom)
+#}}}
+#{{{overview map
+if feature_overview_map:
+    if feature_info:
+        print("### Create Overview Map ###")
+    map=mo.map()
+    map.set_location([lat,lon])
+    map.set_zoom(11,12)
+    map.add_marker([lat,lon])
+    map.generate(str(output_directory)+str(output_leaflet))
+#}}}
+#{{{building
+if feature_building:
+    if feature_info:
+        print("### Building ###")
+    nominatim = Nominatim(user_agent="tutorial")
+    try:
+        location=nominatim.geocode(building).raw
+    except NoneType:
+        print("Exception")
+        sys.exc_clear()
+        pass
+    building_lat=float(location["lat"])
+    building_lon=float(location["lon"])
+    building_utm=utm.from_latlon(float(location["lat"]),float(location["lon"]))
+    if debug_building:
+        print("Building:")
+        print(" Address:",config['building']['building'])
+        print(" Lat:",building_lat)
+        print(" Lon:",building_lon)
+        print(" UTM:",building_utm)
+    del nominatim
+    building1=osm_objects.building()
+    building1.from_nominatim(building)
+    building2=osm_objects.building()
+    river_ahr=osm.trace("http://localhost:8000/osm/",318372)
+    building2.add_river(river_ahr)
+    building2.from_way_id(1051910904)
+    building3=osm_objects.building()
+    building3.add_river(river_ahr)
+    building3.from_way_id(702193118)
+    buildings_raw=os.popen("osmium tags-filter /var/www/html/pbf/tmp.pbf a/building -f osm | grep \"<way id=\" | cut -d\"\\\"\" -f2").read()
+    buildings=buildings_raw.splitlines()
+    no_buildings=(len(buildings))
 #}}}
 #{{{add maplayers to map
+if feature_info:
+    print("### Create Maplayers ###")
 maplayer0=osm.maplayer(map0)
 maplayer1=osm.maplayer(map0)
 maplayer2=osm.maplayer(map0)
@@ -41,211 +198,326 @@ maplayer3=osm.maplayer(map0)
 maplayer4=osm.maplayer(map0)
 maplayer5=osm.maplayer(map0)
 #}}}
+#{{{ osmium
+if feature_osmium:
+    if feature_info:
+        print("### Extract bbox from osm pbf ###")
+    map0.calculate()
+    bbox=map0.get_bbox_deg()
+    lat1=bbox[0]["lat"]
+    lon1=bbox[0]["lon"]
+    lat2=bbox[3]["lat"]
+    lon2=bbox[3]["lon"]
+    os.system("osmium extract --overwrite -o /var/www/html/pbf/tmp.pbf -b"+str(lon1)+","+str(lat1)+","+str(lon2)+","+str(lat2)+" /var/www/html/pbf/base.pbf")
+    river_names_raw=os.popen("osmium tags-filter /var/www/html/pbf/tmp.pbf nw/waterway -f osm | grep \"name\" | cut -d\"\\\"\" -f4 | sort | uniq").read()
+    river_ids=set()
+    # FIX: rivers do not neccesarily have to be part of a relation
+    # FIX: check that relations are waterways
+    river_ids_raw=os.popen("for i in $(osmium tags-filter /var/www/html/pbf/tmp.pbf nw/waterway -f osm | grep \"<way id\" | cut -d\"\\\"\" -f2 | sort | uniq); do osmium getparents /var/www/html/pbf/tmp.pbf w${i} -f osm; done | grep \"relation id\" | cut -d\"\\\"\" -f2 | sort | uniq").read()
+    river_names=river_names_raw.splitlines()
+    river_ids=river_ids_raw.splitlines()
+    if debug_osmium:
+        print("Waters:")
+        print(river_names)
+        print("River IDs (Named Rivers)")
+        print(river_ids)
+    # use extracted rivers for trace
+    rivers_list=river_ids
+#}}}
+#{{{ municipal_boundary
+if feature_municipal_boundary:
+    if feature_info:
+        print("### Find municipal boundaries ###")
+    communities=osm_objects.objects_list()
+    communities.set_type("area")
+    communities.set_tagfilter("boundary=administrative")
+    objects=communities.get_objects()
+    filtered_communities=communities.tag_filter("admin_level","8")
+    filtered_communities=communities.tag_filter("name","Dernau")
+    for i in filtered_communities:
+        relation=osm_objects.relation(i)
+        members=relation.get_members()
+    sorted_ways=osm_objects.sorted_ways()
+    for i in members:
+        way=osm_objects.way(i)
+        sorted_ways.way_add(i)
+    sorted_ways.sort()
+    node_locations=sorted_ways.get_polygon()
+    print("node_locations")
+    print(node_locations)
+    print("number of nodes")
+    print(len(node_locations))
+    polygon6=osm.polygon(node_locations,maplayer5)
+    polygon6.set_opacity(20)
+    polygon6.set_color("gray")
+    polygon6.set_stroke_width(0.5)
+    polygon6.add()
+#}}}
 #{{{rivers
-for i in config['rivers']:
-    river=osm.trace("http://localhost:8000/osm/",i)
-    polyline5=osm.polyline(river.get_points(),maplayer5)
-    del river
+if feature_rivers:
+    if feature_info:
+        print("### Trace Rivers ###")
+    for i in rivers_list:
+        if feature_info:
+            print("  ### Tracing River Id", i,"###")
+        river=osm.trace("http://localhost:8000/osm/",i)
+        polyline5=osm.polyline(river.get_points(),maplayer5)
+    if debug_rivers:
+        print("Rivers")
 #}}}
 #{{{single points
-point1=osm.point(maplayer0)
-point1.from_deg(lon,lat)
-point2=osm.point(maplayer0)
-point2.from_deg(8.08,50.28)
-point3=osm.point(maplayer0)
-point3.from_deg(7.207,50.28)
-#}}}
-#{{{clip-path for 3D texture
-nw=osm.point(maplayer0)
-nw.from_utm(5600000,350000,32,"U")
-ne=osm.point(maplayer0)
-ne.from_utm(5600000,360000,32,"U")
-se=osm.point(maplayer0)
-se.from_utm(5590000,360000,32,"U")
-sw=osm.point(maplayer0)
-sw.from_utm(5590000,350000,32,"U")
-nw.print()
-ne.print()
-se.print()
-sw.print()
-nw_x=str(nw.get_x())
-nw_y=str(nw.get_y())
-ne_x=str(ne.get_x())
-ne_y=str(ne.get_y())
-se_x=str(se.get_x())
-se_y=str(se.get_y())
-sw_x=str(sw.get_x())
-sw_y=str(sw.get_y())
-clip_path=nw_x+"px"+" "+nw_y+"px,"+ne_x+"px"+" "+ne_y+"px,"+se_x+"px"+" "+se_y+"px,"+sw_x+"px"+" "+sw_y+"px"
-print(clip_path)
-
-
+if feature_points:
+    river_ahr=osm.trace("http://localhost:8000/osm/",318372)
+    if feature_info:
+        print("### Add single points to maplayers ###")
+    for i in building1.get_points():
+        lon=float(i[1])
+        lat=float(i[0])
+        #point2=osm.point(maplayer0)
+        #point2.from_deg(lon,lat)
+    no_level1=0
+    no_level2=0
+    for i in buildings:
+        building4=osm_objects.building()
+        building4.add_river(river_ahr)
+        building4.from_way_id(i)
+        building4.create_page(output_directory+output_buildings_info)
+        polygon5=osm.polygon(building4.get_points(),maplayer5)
+        polygon5.set_opacity(50)
+        polygon5.set_color("red")
+        level1=building4.get_danger_level1()
+        level2=building4.get_danger_level2()
+        if level2 > flood_level:
+            polygon5.set_color("yellow")
+            no_level2+=1
+        if level1 > flood_level:
+            polygon5.set_color("green")
+            no_level1+=1
+        polygon5.set_stroke_width(1)
+        polygon5.set_link(building4.get_id())
+        polygon5.add()
+        del building4
+    print("Buildings:", no_buildings-no_level2)
+    print("Level2:", no_level2-no_level1)
+    print("Level1:", no_level1)
+    print("Evacuate:", int(no_buildings-no_level2)*(1700/no_buildings))
+    print("Warn:", int(no_level2-no_level1)*(1700/no_buildings))
+    print("Safe:", int(no_level1)*(1700/no_buildings))
+    polygon2=osm.polygon(building1.get_points(),maplayer2)
+    polygon2.set_color("yellow")
+    polygon2.set_opacity(100)
+    polygon2.set_stroke_width(4)
+    polygon2.add()
+    polygon3=osm.polygon(building2.get_points(),maplayer0)
+    polygon4=osm.polygon(building3.get_points(),maplayer0)
+    #point1=osm.point(maplayer0)
+    #point1.from_deg(lon,lat)
+    point_nw=osm.point(maplayer0)
+    point_nw=point_nw.from_utm(5600000,360000,32,"U")
+    point_ne=osm.point(maplayer0)
+    point_ne=point_ne.from_utm(5600000,370000,32,"U")
+    point_se=osm.point(maplayer0)
+    point_se=point_se.from_utm(5590000,370000,32,"U")
+    point_sw=osm.point(maplayer0)
+    point_sw=point_sw.from_utm(5590000,360000,32,"U")
 #}}}
 #{{{utm grid
-for i in range(5300000,6200000+1,10000):
-    utm_grid=[]
-    for j in range(300000,700000+1,10000):
-        point4=osm.point(maplayer0)
-        point4.from_utm(i,j,32,"U")
-        lat=point4.get_deg()["lat"]
-        lon=point4.get_deg()["lon"]
-        utm_grid.append([lat,lon])
-    polyline6=osm.polyline(utm_grid,maplayer5)
-for j in range(300000,700000+1,10000):
-    utm_grid=[]
+if feature_utm:
+    if feature_info:
+        print("### Generate UTM grid")
+    if debug_utm:
+        print("UTM Grid")
     for i in range(5300000,6200000+1,10000):
-        point4=osm.point(maplayer0)
-        point4.from_utm(i,j,32,"U")
-        lat=point4.get_deg()["lat"]
-        lon=point4.get_deg()["lon"]
-        utm_grid.append([lat,lon])
-    polyline6=osm.polyline(utm_grid,maplayer5)
-map0.calculate()
-bbox_utm=maplayer5.get_bbox_utm()
-min_e=min(bbox_utm, key=lambda item:item[0])[0]
-max_e=max(bbox_utm, key=lambda item:item[0])[0]
-length_e=max_e-min_e
-print(length_e)
-min_n=min(bbox_utm, key=lambda item:item[1])[1]
-max_n=max(bbox_utm, key=lambda item:item[1])[1]
-length_n=max_n-min_n
-print(length_n)
-# calculate skewness
-## nw to ne
-nw=utm.to_latlon(min_e,max_n,32,"U")
-ne=utm.to_latlon(max_e,max_n,32,"U")
-se=utm.to_latlon(max_e,min_n,32,"U")
-sw=utm.to_latlon(min_e,min_n,32,"U")
-rela=glc.WGS84.Inverse(nw[0],nw[1],ne[0],ne[1])
-skew_n=rela["azi1"]
-print(skew_n)
-rela=glc.WGS84.Inverse(se[0],se[1],ne[0],ne[1])
-skew_e=rela["azi1"]
-print(skew_e)
-rela=glc.WGS84.Inverse(sw[0],sw[1],se[0],se[1])
-skew_s=rela["azi1"]
-print(skew_s)
-rela=glc.WGS84.Inverse(sw[0],sw[1],nw[0],nw[1])
-skew_w=rela["azi1"]
-print(skew_w)
-para_sn=skew_e-skew_w
-print("Parallelism S-N (expected: 0)")
-print(para_sn)
-para_we=skew_n-skew_s
-print("Parallelism W-E (expected: 0)")
-print(para_we)
-        #bear=glc.WGS84.Inverse(float(previous[0]),float(previous[1]),float(i[0]),float(i[1]))
-        #previous=i
-        #azi=bear["azi1"]
+        utm_grid=[]
+        for j in range(300000,700000+1,10000):
+            point4=osm.point(maplayer0)
+            point4.from_utm(i,j,32,"U")
+            lat=point4.get_deg()["lat"]
+            lon=point4.get_deg()["lon"]
+            utm_grid.append([lat,lon])
+        polyline6=osm.polyline(utm_grid,maplayer5)
+    for j in range(300000,700000+1,10000):
+        utm_grid=[]
+        for i in range(5300000,6200000+1,10000):
+            point4=osm.point(maplayer0)
+            point4.from_utm(i,j,32,"U")
+            lat=point4.get_deg()["lat"]
+            lon=point4.get_deg()["lon"]
+            utm_grid.append([lat,lon])
+        polyline6=osm.polyline(utm_grid,maplayer5)
+    map0.calculate()
+    bbox_utm=maplayer5.get_bbox_utm()
+    min_e=min(bbox_utm, key=lambda item:item[0])[0]
+    max_e=max(bbox_utm, key=lambda item:item[0])[0]
+    length_e=max_e-min_e
+    if debug_utm:
+        print("  Length E:",length_e,"m")
+    min_n=min(bbox_utm, key=lambda item:item[1])[1]
+    max_n=max(bbox_utm, key=lambda item:item[1])[1]
+    length_n=max_n-min_n
+    if debug_utm:
+        print("  Length N:",length_n,"m")
+    ## nw to ne
+    nw=utm.to_latlon(min_e,max_n,32,"U")
+    ne=utm.to_latlon(max_e,max_n,32,"U")
+    se=utm.to_latlon(max_e,min_n,32,"U")
+    sw=utm.to_latlon(min_e,min_n,32,"U")
+    rela=glc.WGS84.Inverse(nw[0],nw[1],ne[0],ne[1])
+    skew_n=rela["azi1"]
+    if debug_utm:
+        print("  Skewness N:",skew_n,"deg")
+    rela=glc.WGS84.Inverse(se[0],se[1],ne[0],ne[1])
+    skew_e=rela["azi1"]
+    if debug_utm:
+        print("  Skewness E:",skew_e,"deg")
+    rela=glc.WGS84.Inverse(sw[0],sw[1],se[0],se[1])
+    skew_s=rela["azi1"]
+    if debug_utm:
+        print("  Skewness S:",skew_s,"deg")
+    rela=glc.WGS84.Inverse(sw[0],sw[1],nw[0],nw[1])
+    skew_w=rela["azi1"]
+    if debug_utm:
+        print("  Skewness W:",skew_w,"deg")
+    para_sn=skew_e-skew_w
+    if debug_utm:
+        print("  Parallelism S-N (expected: 0)")
+        print("   ",para_sn,"deg")
+    para_we=skew_n-skew_s
+    if debug_utm:
+        print("  Parallelism W-E (expected: 0)")
+        print("   ",para_we,"deg")
+        bear=glc.WGS84.Inverse(float(previous[0]),float(previous[1]),float(i[0]),float(i[1]))
+    previous=i
+    azi=bear["azi1"]
 #}}}
-#{{{zone by altitude
-mesh=dgm.grid(25)
-mesh.zones(200)
-map0.calculate()
-mesh.load_from_bbox_utm(maplayer0.get_bbox_utm())
-orig_stdout=sys.stdout
-f=open('/var/www/html/cache/map.stl', 'w')
-sys.stdout=f
-mesh.interpolation(5)
-mesh.generate_stl()
-sys.stdout=orig_stdout
-f.close()
-zones=mesh.zones_from_utm(357300.0,5595000.0)
-maplayer0.set_name("layer0")
-for i in zones:
-   polygon1=osm.polygon(i,maplayer0)
-   del polygon1
-del mesh
+##{{{zone by altitude
+if feature_altitude:
+    if feature_info:
+        print("### Calculate Zones by Altitude ###")
+    mesh=dgm.grid(25)
+    print("DEBUG")
+    mesh.zones(-200)
+    map0.calculate()
+    mesh.load_from_bbox_utm(maplayer0.get_bbox_utm())
+    orig_stdout=sys.stdout
+    zones=mesh.zones_from_utm(357300.0,5595000.0)
+    maplayer0.set_name("layer0")
+    for i in zones:
+       polygon1=osm.polygon(i,maplayer0)
+       polygon1.add()
+       del polygon1
+    del mesh
 #}}}
-#{{{flood_zone ahr
-#river_trace=osm.trace("http://localhost:8000/osm",318372)
-#points=river_trace.get_points()
-#traced=ri.river(points)
-#traced.load_dataframe()
-#mesh=dgm.grid(25)
-#map0.calculate()
-#mesh.load_from_bbox_utm(maplayer0.get_bbox_utm())
-#mesh.inject_dataframe(traced.get_dataframe())
-#mesh.zones(-1)
-#mesh.interpolation(5)
-#zones=mesh.zones_from_utm(357300.0,5595000.0)
-#maplayer0.set_name("layer0")
-#for i in zones:
-   #polygon1=osm.polygon(i,maplayer0)
-   #del polygon1
-#del mesh
+#{{{generate stl file
+if feature_3dvisual:
+    if feature_info:
+        print("### Generate STL file ###")
+    stl_mesh=dgm.grid(25)
+    map0.calculate()
+    stl_mesh.load_from_bbox_utm(maplayer0.get_bbox_utm())
+    orig_stdout=sys.stdout
+    f=open('/var/www/html/cache/map.stl', 'w')
+    sys.stdout=f
+    stl_mesh.generate_stl_deg(map0)
+    f.close
+    sys.stdout=orig_stdout
 #}}}
-#{{{flood_zone ahr
-#river_trace=osm.trace("http://localhost:8000/osm",318372)
-#points=river_trace.get_points()
-#traced=ri.river(points)
-#traced.load_dataframe()
-#mesh=dgm.grid(25)
-#map0.calculate()
-#mesh.load_from_bbox_utm(maplayer1.get_bbox_utm())
-#mesh.inject_dataframe(traced.get_dataframe())
-#mesh.zones(-2)
-#mesh.interpolation(5)
-#zones=mesh.zones_from_utm(357300.0,5595000.0)
-#maplayer1.set_name("layer1")
-#for i in zones:
-#   polygon1=osm.polygon(i,maplayer1)
-#   del polygon1
-#del mesh
+#{{{runoff
+if feature_runoff:
+    if feature_info:
+        print("### Runoff Simulation ###")
+    if debug_runoff:
+        print(" ### Debug Runoff ###")
+    runoff_mesh=dgm.grid(25)
+    map0.calculate()
+    runoff_mesh.load_from_bbox_utm(maplayer0.get_bbox_utm())
+    #runoff_mesh.interpolation(1)
+    runoff_dataframe=runoff_mesh.get_dataframe()
+    if debug_runoff:
+        print(" runoff_mesh Dataframe")
+        print(runoff_dataframe)
+    flow_paths=runoff.flow_paths(100,100)
+    flow_paths.inject_dataframe(runoff_dataframe)
+    flow_paths.simulate()
+    traces=flow_paths.get_traces()
+    for x in traces:
+        flow=list()
+        for i in traces[x]:
+            try:
+                node=utm.to_latlon(i[0],i[1],32,"U")
+            except:
+                pass
+            flow.append(node)
+        polyline6=osm.polyline(flow,maplayer5)
 #}}}
-#{{{flood_zone ahr
-#river_trace=osm.trace("http://localhost:8000/osm",318372)
-#points=river_trace.get_points()
-#traced=ri.river(points)
-#traced.load_dataframe()
-#mesh=dgm.grid(25)
-#map0.calculate()
-#mesh.load_from_bbox_utm(maplayer2.get_bbox_utm())
-#mesh.inject_dataframe(traced.get_dataframe())
-#mesh.zones(-3)
-#mesh.interpolation(5)
-#zones=mesh.zones_from_utm(357300.0,5595000.0)
-#maplayer2.set_name("layer2")
-#for i in zones:
-#   polygon1=osm.polygon(i,maplayer2)
-#   del polygon1
-#del mesh
-#}}}
-#{{{flood_zone ahr
-#river_trace=osm.trace("http://localhost:8000/osm",318372)
-#points=river_trace.get_points()
-#traced=ri.river(points)
-#traced.load_dataframe()
-#mesh=dgm.grid(25)
-#map0.calculate()
-#mesh.load_from_bbox_utm(maplayer3.get_bbox_utm())
-#mesh.inject_dataframe(traced.get_dataframe())
-#mesh.zones(-4)
-#mesh.interpolation(5)
-#zones=mesh.zones_from_utm(357300.0,5595000.0)
-#maplayer3.set_name("layer3")
-#for i in zones:
-#   polygon1=osm.polygon(i,maplayer3)
-#   del polygon1
-#del mesh
-#}}}
-#{{{flood_zone ahr
-#river_trace=osm.trace("http://localhost:8000/osm",318372)
-#points=river_trace.get_points()
-#traced=ri.river(points)
-#traced.load_dataframe()
-#mesh=dgm.grid(25)
-#map0.calculate()
-#mesh.load_from_bbox_utm(maplayer4.get_bbox_utm())
-#mesh.inject_dataframe(traced.get_dataframe())
-#mesh.zones(-5)
-#mesh.interpolation(5)
-#zones=mesh.zones_from_utm(357300.0,5595000.0)
-#maplayer4.set_name("layer4")
-#for i in zones:
-#   polygon1=osm.polygon(i,maplayer4)
-#   del polygon1
-#del mesh
+#{{{flood_zone Ahr
+if feature_flood_zone:
+    #{{{ info
+    if feature_info:
+        print("### Calculate flood zones Ahr ###")
+        #}}}
+    #{{{ trace river
+    river_trace=osm.trace("http://localhost:8000/osm",318372)
+    #river_trace=osm.trace("http://localhost:8000/osm",1848337)
+    points=river_trace.get_points()
+    traced=ri.river(points)
+    #}}}
+    #{{{ debug
+    if debug_flood_zone:
+        traced.print()
+        print("Load Dataframe")
+        #}}}
+        #{{{ load dataframe from river
+    traced.load_dataframe()
+    #}}}
+    #{{{ debug
+    if debug_flood_zone:
+        print("Create Grid(25)")
+        #}}}
+        #{{{ create grid
+    mesh=dgm.grid(25)
+    #}}}
+    #{{{ debug
+    if debug_flood_zone:
+        print("Calculate Map (need bbox)")
+        #}}}
+        #{{{ get bbox from map
+    map0.calculate()
+    #}}}
+    #{{{ debug
+    if debug_flood_zone:
+        print("Load Mesh from bbox UTM)")
+        #}}}
+        #{{{create mesh brom bbox
+    mesh.load_from_bbox_utm(maplayer0.get_bbox_utm())
+    #}}}
+    #{{{debug
+    if debug_flood_zone:
+        print("Inject dataframe from river")
+        print("River dataframe")
+        print(traced.get_dataframe())
+        #}}}
+        #{{{ inject dataframe
+    mesh.inject_dataframe(traced.get_dataframe())
+    #}}}
+    #{{{ set flood level
+    mesh.zones(-flood_level)
+    #mesh.zones(-9.7)
+    #mesh.zones(-3)
+    #}}}
+    #{{{ interpolate mesh
+    mesh.interpolation(5)
+    #}}}
+    zones=mesh.zones_from_utm(357300.0,5595000.0)
+    maplayer0.set_name("layer0")
+    for i in zones:
+       polygon1=osm.polygon(i,maplayer0)
+       polygon1.set_color("blue")
+       polygon1.set_opacity(20)
+       polygon1.set_stroke_color("none")
+       polygon1.add()
+       del polygon1
+    del mesh
 #}}}
 #{{{full map zone
 #mesh=dgm.grid(25)
@@ -253,26 +525,31 @@ del mesh
 #mesh.load_from_bbox_utm(maplayer0.get_bbox_utm())
 #}}}
 #{{{create buttons to be included
-orig_stdout=sys.stdout
-f=open('/home/tk/guahrdian/code/includes/buttons', 'w')
-sys.stdout=f
-print("<div class=\"floating\">")
-print("<button class=\"0\" id=\"map_d\" type=\"button\" onclick=\"map_d()\">Disable Map </button>")
-print("<button class=\"0\" id=\"map_e\" type=\"button\" onclick=\"map_e()\">Enable Map </button>")
-print("<button class=\"1\" id=\"mapl_d\" type=\"button\" onclick=\"mapl_d()\">Disable Maplayers</button>")
-print("<button class=\"1\" id=\"mapl_e\" type=\"button\" onclick=\"mapl_e()\">Enable Maplayers</button>")
-for i in range(6):
-    print("<button class=\"2\" id=\"l"+str(i)+"\" type=\"button\" onclick=\"l"+str(i)+"_d()\">Disable Layer",str(i),"</button>")
-    print("<button class=\"2\" id=\"l"+str(i)+"\" type=\"button\" onclick=\"l"+str(i)+"_e()\">Enable Layer",str(i),"</button>")
-print("<button class=\"2\" id=\"animation\" type=\"button\" onclick=\"animation()\">Animation</button>")
-print("<button class=\"2\" id=\"debug\" type=\"button\" onclick=\"debug()\">Debug</button>")
-print("</div>")
-sys.stdout=orig_stdout
-f.close()
+if feature_buttons:
+    if feature_info:
+        print("### Include Buttons ###")
+    orig_stdout=sys.stdout
+    f=open('/home/tk/guahrdian/code/includes/buttons', 'w')
+    sys.stdout=f
+    print("<div class=\"floating\">")
+    print("<button class=\"0\" id=\"map_d\" type=\"button\" onclick=\"map_d()\">Disable Map </button>")
+    print("<button class=\"0\" id=\"map_e\" type=\"button\" onclick=\"map_e()\">Enable Map </button>")
+    print("<button class=\"1\" id=\"mapl_d\" type=\"button\" onclick=\"mapl_d()\">Disable Maplayers</button>")
+    print("<button class=\"1\" id=\"mapl_e\" type=\"button\" onclick=\"mapl_e()\">Enable Maplayers</button>")
+    for i in range(0):
+        print("<button class=\"2\" id=\"l"+str(i)+"\" type=\"button\" onclick=\"l"+str(i)+"_d()\">Disable Layer",str(i),"</button>")
+        print("<button class=\"2\" id=\"l"+str(i)+"\" type=\"button\" onclick=\"l"+str(i)+"_e()\">Enable Layer",str(i),"</button>")
+    #print("<button class=\"2\" id=\"animation\" type=\"button\" onclick=\"animation()\">Animation</button>")
+    #print("<button class=\"2\" id=\"debug\" type=\"button\" onclick=\"debug()\">Debug</button>")
+    print("</div>")
+    sys.stdout=orig_stdout
+    f.close()
 #}}}
 #{{{create js to be included
+if feature_info:
+    print("### Include JavaScript ###")
 orig_stdout=sys.stdout
-f=open('/home/tk/guahrdian/code/includes/js', 'w')
+f=open('/home/tk/guahrdian/code/includes/js.tmp', 'w')
 sys.stdout=f
 print("<script>")
 print("function map_d(){")
@@ -318,22 +595,45 @@ print("</script>")
 sys.stdout=orig_stdout
 f.close()
 #}}}
+#{{{write flood_zone to file
+if feature_info:
+    print("### Write flood zone to svg file ###")
+maplayer0.polygon_svg("/var/www/html/cache/floodzone/dernau/16/2/3/2/3/floodzone.svg")
+#}}}
 #{{{write map to file
+if feature_info:
+    print("### Write map to file ###")
 orig_stdout=sys.stdout
-f=open('/var/www/html/cache/map.html', 'w')
+f=open(output_directory+output_mainfile, 'w')
 sys.stdout=f
-with open(output_html, mode="wt") as f:
-    print("<html><head><link rel=\"stylesheet\" href=\"style.css\"/>")
+with open(output_directory+output_mainfile, mode="wt") as f:
+    print("<html><head><link rel=\"stylesheet\" href=\""+output_css_main+"\"/>")
     print("<script type=\"text/javascript\" src=\"https://code.jquery.com/jquery-1.11.2.min.js\"></script>")
-    print("<script src=\"gu.js\"></script>")
+    print("<script src=\""+output_js_main+"\"></script>")
     with open('includes/debug', 'r') as f:
         print(f.read())
     f.close
+    with open('includes/house', 'r') as f:
+        print(f.read())
+    f.close
+    if feature_web_info:
+        with open ('includes/info', 'r') as f:
+            print(f.read())
+        f.close
+    if feature_overview_map:
+        with open ('includes/folium', 'r') as f:
+            print(f.read())
+        f.close
+    if feature_3dvisual:
+        with open ('includes/3d', 'r') as f:
+            print(f.read())
+        f.close
     #with open('includes/js', 'r') as f:
     #    print(f.read())
     print("</head><body>")
-    with open('includes/buttons', 'r') as f:
-        print(f.read())
+    if feature_buttons:
+        with open('includes/buttons', 'r') as f:
+            print(f.read())
     print("<div class=\"mapcontainer\">")
     print("<div class=\"map\" style=\"position:relative\">")
     maplayer0.display()
@@ -350,10 +650,213 @@ sys.stdout=orig_stdout
 f.close()
 f=open('/var/www/html/cache/debug.html', 'w')
 sys.stdout=f
-map0.print()
-point1.print()
-maplayer0.print()
 sys.stdout=orig_stdout
 f.close()
     #}}}
+#{{{building svg
+if feature_svg:
+    if feature_info:
+        print("### Create house SVG ###")
+    stories=2
+    basement=True
+    water_level=30
+    img_width=400
+    img_height=500
+    d = draw.Drawing(img_width, img_height, origin='center', displayInline=False)
+    # house
+    r = draw.Rectangle(-100,0,300,200, fill='#ffffe6')
+    # door
+    rd = draw.Rectangle(-90,0,50,100, fill='#333300')
+    # windows
+    rw1 = draw.Rectangle(-10,40,50,50, fill='#333300')
+    rw2 = draw.Rectangle(60,40,50,50, fill='#333300')
+    rw3 = draw.Rectangle(-10,140,50,50, fill='#333300')
+    rw4 = draw.Rectangle(60,140,50,50, fill='#333300')
+    # roof
+    rr = draw.Rectangle(-110,180,320,100, fill='#00001a')
+    # chimney
+    rc = draw.Rectangle(70,200,20,100, fill='#00001a')
+    # Water
+    w = draw.Rectangle(-500,0,1000,water_level, fill='#ccccff', fill_opacity=0.7)
+    # Surface
+    s = draw.Rectangle(-500,0,1000,100, fill='#ccccff', fill_opacity=0.7)
+    d.append(r)
+    d.append(rd)
+    d.append(rw1)
+    d.append(rw2)
+    d.append(rw3)
+    d.append(rw4)
+    d.append(rr)
+    d.append(rc)
+    d.append(w)
+    d.savePng('/var/www/html/cache/house.png')
+#}}}
+#{{{ 3D texture
+if feature_info:
+    print("### Generate 3D texture ###")
+utm_tile_e=building_utm[0]
+utm_tile_n=building_utm[1]
+utm_w=float(str(utm_tile_e)[:2]+str(0)+str(0)+str(0)+str(0))
+utm_s=float(str(utm_tile_n)[:3]+str(0)+str(0)+str(0)+str(0))
+if debug_3dvisual:
+    print("UTM TILE E:",utm_tile_e)
+    print("UTM TILE N:",utm_tile_n)
+    print("UTM S:",utm_s)
+    print("UTM W:",utm_w)
+utm_n=utm_s+10000
+if debug_3dvisual:
+    print("UTM N:",utm_n)
+utm_e=utm_w+10000
+if debug_3dvisual:
+    print("UTM E:",utm_e)
+if debug_3dvisual:
+    maplayer1.print()
+    print("Point NW")
+point_utm_nw=osm.point(maplayer1)
+#BUG: from UTM should be in the form (east, north, zone, hemi) and not (north, east, zone, hemi)
+point_utm_nw.from_utm(utm_n,utm_w,32,"U")
+if debug_3dvisual:
+    point_utm_nw.print()
+    print(point_utm_nw.get_x())
+    print("Point NE")
+point_utm_ne=osm.point(maplayer1)
+point_utm_ne.from_utm(utm_n,utm_e,32,"U")
+if debug_3dvisual:
+    point_utm_ne.print()
+    print("Point SE")
+point_utm_se=osm.point(maplayer1)
+point_utm_se.from_utm(utm_s,utm_e,32,"U")
+if debug_3dvisual:
+    point_utm_se.print()
+    print("Point SW")
+point_utm_sw=osm.point(maplayer1)
+point_utm_sw.from_utm(utm_s,utm_w,32,"U")
+if debug_3dvisual:
+    point_utm_sw.print()
+    maplayer1.print()
+    print("Maplayer X Pixels:",maplayer1.get_xsize())
+    print("Maplayer Y Pixels:",maplayer1.get_ysize())
+xsize=map0.get_xsize()
+ysize=map0.get_ysize()
+nw_x=100*point_utm_nw.get_x()/xsize 
+nw_y=100*point_utm_nw.get_y()/ysize 
+ne_x=100*point_utm_ne.get_x()/xsize
+ne_y=100*point_utm_ne.get_y()/ysize 
+se_x=100*point_utm_se.get_x()/xsize
+se_y=100*point_utm_se.get_y()/ysize
+sw_x=100*point_utm_sw.get_x()/xsize
+sw_y=100*point_utm_sw.get_y()/ysize
+if debug_3dvisual:
+    print("NW X:",nw_x)
+    print("NW Y:",nw_y)
+    print("NE X:",ne_x)
+    print("NE Y:",ne_y)
+    print("SE X:",se_x)
+    print("SE Y:",se_x)
+    print("SW X:",sw_x)
+    print("SW Y:",sw_y)
+    print("UTM TILE N:",utm_tile_n)
+    print("UTM TILE E:",utm_tile_e)
+    map0.print()
+#}}}
+#{{{ CSS
+#{{{ copy main css
+shutil.copy(includes_directory+includes_css_main, output_directory+output_css_main)
+#}}}
+#{{{clip path
+if feature_info:
+    print("### Generate CSS clip path ###")
+orig_stdout=sys.stdout
+f=open('/var/www/html/cache/clip.css','w')
+sys.stdout=f
+print(".map {")
+# Bugfix: clip path has to be relative to the map origin
+#print("  clip-path: polygon("+str(nw_x)+"% "+str(nw_y)+"%,"+str(ne_x)+"% "+str(ne_y)+"%,"+str(se_x)+"% "+str(se_y)+"%,"+str(sw_x)+"% "+str(sw_y)+"%);")
+print("  width:",str(map0.get_xsize())+"px;")
+print("  height:",str(map0.get_ysize())+"px;")
+print("}")
+sys.stdout=orig_stdout
+f.close
+#}}}
+#{{{rotate
+if feature_info:
+    print("### Generate CSS rotate ###")
+orig_stdout=sys.stdout
+f=open('/var/www/html/cache/rotate.css','w')
+sys.stdout=f
+print(".map {")
+#print("  rotate:",str(-skew_e)+"deg;")
+print("}")
+sys.stdout=orig_stdout
+f.close
+#}}}
+#{{{auto mode
+if feature_info:
+    print("### Generate CSS auto ###")
+orig_stdout=sys.stdout
+f=open('/var/www/html/cache/auto.css','w')
+sys.stdout=f
+if feature_auto:
+    print(".floating {")
+    print("  display:none;")
+    print("}")
+    print(".debug {")
+    print("  display:none;")
+    print("}")
+else:
+    print(".floating {")
+    print("}")
+    print(".debug {")
+    print("}")
+sys.stdout=orig_stdout
+f.close
+#}}}
+#{{{web 
+if feature_info:
+    print("### Generate CSS web ###")
+orig_stdout=sys.stdout
+f=open('/var/www/html/cache/web.css','w')
+sys.stdout=f
+print(".map {")
+print("  width:",str(map0.get_xsize())+"px;")
+print("  height:",str(map0.get_ysize())+"px;")
+print("}")
+sys.stdout=orig_stdout
+f.close
+#}}}
+#}}}
+#{{{ JS
+#{{{ copy main css
+shutil.copy(includes_directory+includes_js_main, output_directory+output_js_main)
+#}}}
+#}}}
+#{{{pyvista
+if feature_3dvisual:
+    if feature_info:
+        print("### Generate 3D visualization ###")
+    imgkit.from_url('http://localhost:8000/live/index.html', '/var/www/html/cache/map.png')
+    os.system("convert -flip /var/www/html/cache/map.png /var/www/html/cache/map.png")
+    tex=pyvista.read_texture("/var/www/html/cache/map.png")
+    reader=pyvista.get_reader("/var/www/html/cache/map.stl")
+    mesh=reader.read()
+    mesh.texture_map_to_plane(inplace=True)
+    mesh.plot(texture=tex,background="black", show_axes=False, zoom=1.5, screenshot="/var/www/html/cache/3d.png")
+    os.system('convert /var/www/html/cache/3d.png -transparent "rgb(0,0,0)" tmp.png')
+    os.system('mv tmp.png /var/www/html/cache/3d.png')
+#    p=pyvista.Plotter()
+#    p.add_mesh(mesh)
+#    p.show()
+#}}}
+#{{{Info div
+if feature_web_info:
+    if feature_info:
+        print("### Generate Web Info ###")
+        orig_stdout=sys.stdout
+        f=open('/var/www/html/cache/debug.html', 'w')
+        sys.stdout=f
+        print("<pre>")
+        building1.print()
+        print("</pre>")
+        f.close()
+#}}}
 # vim:foldmethod=marker:foldlevel=0

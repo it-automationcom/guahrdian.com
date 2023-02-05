@@ -7,7 +7,7 @@ import dgm
 import itertools
 import pandas as pd
 from scipy.interpolate import griddata
-
+import sys
 #}}}
 #{{{class river
 class river:
@@ -24,6 +24,7 @@ class river:
     self.mesh=None
     self.dataframe=None
     self.meshsize=25
+    self.debug=False
 
     # Calculate distances and bearing 
     previous=points[0]
@@ -60,6 +61,9 @@ class river:
    
     # get altitudes
     self.mesh=dgm.grid(self.meshsize)
+    if self.debug:
+        print("River bbox_utm")
+        print(self.bbox_utm)
     self.mesh.load_from_bbox_utm(self.bbox_utm)
     self.altitudes=[]
     for i in self.points:
@@ -68,11 +72,32 @@ class river:
   #}}}
 #{{{load_dataframe
   def load_dataframe(self):
+   if self.debug:
+       print("  ### dgm.river.load_dataframe ###")
+   #d create dataframe with altitude values (grid)
    self.dataframe=self.mesh.get_dataframe()  
+   if self.debug:
+       print("self.dataframe:")
+       print(self.dataframe)
+   #d create empty dataframe for relative values with the (same size as the default dataframe)
    alt_rel=pd.DataFrame().reindex_like(self.dataframe)
+   if self.debug:
+       print("alt_rel (empty dataframe)")
+       print(alt_rel)
+   #Bug: N and E are swapped
    idx_N=[]
    idx_E=[]
+#{{{ interpolation (x-direction)
    Z=[]
+   #d: the river describes a strictly monotonically decreasing function
+   #d: the geolocation of the single nodes do not fit the grid exactly, thus introducting some noise (rising river). In order to fix that we interpolate all of those points
+   previous_alt=self.altitudes[0]
+   if self.debug:
+       print("DEBUG")
+       print("River dataframe")
+       print(self.dataframe)
+       print("Slice")
+       print(self.dataframe.loc[5584000.0:5600025.0,:])
    for i in self.points:
        lat=float(i[0])
        lon=float(i[1])
@@ -81,39 +106,35 @@ class river:
        E=float(self.fit_grid(point_utm[1]))
        idx_N.append(N)
        idx_E.append(E)
-       alt=self.dataframe.loc[E,N]
-       Z.append(alt)
-   #print(len(idx_N))
-   #print(len(idx_E))
-   #print(len(Z))
-   #print("")
-   #print("Dataframe")
-   #print(self.dataframe.unstack())
+       try:
+           alt=self.dataframe.loc[E,N]
+       except:
+           print("Exception: can not find altitude for point",i)
+           print("East:",E)
+           print("North:",N)
+           print("does not exist in dataframe")
+           print(self.dataframe)
+           sys.exit(1)
+       if alt <= previous_alt:
+           Z.append(alt)
+           previous_alt=alt
+       elif np.isnan(previous_alt):
+           #d in case there is no altitude value for the spring or previous node
+           Z.append(np.nan)
+           previous_alt=alt
+       else:
+           Z.append(previous_alt)
+#}}}
    N=self.dataframe.columns.values
    E=self.dataframe.index.values
-   #print(N)
-   #print(E)
    mesh_n,mesh_e=np.meshgrid(N,E)
-   #print(mesh_n)
-   #print(mesh_e)
    zi=griddata((idx_N,idx_E),Z,(mesh_n,mesh_e),method='nearest')
-   #print(zi)
    z1=self.dataframe.to_numpy()
-   #print(z1)
    rel=z1.__sub__(zi)
-   #print(rel)
-   #print(rel)
-   #print(E)
-   #print(type(E.tolist()))
    alts_rel=pd.DataFrame(rel,columns=[N.tolist()],index=[E.tolist()])
-   #print(self.dataframe)
    self.dataframe=alts_rel
-   #print("alts_rel")
-   #print(alts_rel.axes[0])
    alts_rel.set_axis(E.tolist(),axis=0)
-   #print(alts_rel.axes[0])
    alts_rel.reindex_like(self.dataframe)
-   #print(alts_rel.axes[0])
   #}}}
   #{{{fit_grid
   def fit_grid(self,x):
@@ -121,7 +142,21 @@ class river:
   #}}}
   #{{{get_altitudes
   def get_altitudes(self):
-     return(self.altitudes)
+     # desc: the river describes a strictly monotically decreasing function
+     # the geolocation of the single nodes do not fit the grid exactly, thus introducing some noise (rising river). In order to fix that we interpolate all of those points
+     alts_smooth=list()
+     previous_alt=self.altitudes[0]
+     for alt in self.altitudes:
+         if alt <= previous_alt:
+             alts_smooth.append(alt)
+             previous_alt=alt
+         elif np.isnan(previous_alt):
+             # in case that there is no altitude value for the spring or previous node
+             previous_alt=alt
+         else:
+             alts_smooth.append(previous_alt)
+     #return(self.altitudes)
+     return(alts_smooth)
   #}}}
   #{{{get_dataframe
   def get_dataframe(self):

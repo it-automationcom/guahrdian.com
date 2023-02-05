@@ -1,0 +1,41 @@
+#!/usr/bin/python3
+#{{{imports
+import drawSvg as draw
+#}}}
+d = draw.Drawing(1000, 1000, origin='center', displayInline=False)
+
+# house
+r = draw.Rectangle(-100,0,300,200, fill='#ffffe6')
+
+# door
+rd = draw.Rectangle(-90,0,50,100, fill='#333300')
+
+# windows
+rw1 = draw.Rectangle(-10,40,50,50, fill='#333300')
+rw2 = draw.Rectangle(60,40,50,50, fill='#333300')
+rw3 = draw.Rectangle(-10,140,50,50, fill='#333300')
+rw4 = draw.Rectangle(60,140,50,50, fill='#333300')
+
+# roof
+rr = draw.Rectangle(-110,180,320,100, fill='#00001a')
+
+# chimney
+rc = draw.Rectangle(70,200,20,100, fill='#00001a')
+
+# Water
+w = draw.Rectangle(-500,0,1000,100, fill='#ccccff', fill_opacity=0.7)
+
+
+
+
+
+d.append(r)
+d.append(rd)
+d.append(rw1)
+d.append(rw2)
+d.append(rw3)
+d.append(rw4)
+d.append(rr)
+d.append(rc)
+d.append(w)
+d.savePng('test.png')

@@ -1,0 +1,11 @@
+#!/usr/bin/python3
+#{{{ imports
+import map_overview as mo
+#}}}
+map=mo.map()
+map.set_location([50.5344234,7.0434557])
+map.set_zoom(12,14)
+map.add_marker([50.5344234,7.0434557])
+map.generate("folium.html")
+map.print()
+# vim:foldmethod=marker:foldlevel=0

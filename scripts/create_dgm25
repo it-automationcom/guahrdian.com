@@ -1,0 +1,17 @@
+#!/bin/bash
+
+E=${1}
+N=${2}
+
+for i in /var/www/html/dgm/1/dgm1_32_${E}*_${N}* 
+do
+zgrep -E '^.{4}00|^.{4}25|^.{4}50|^.{4}75' ${i} | grep -E '^.{15}00|^.{15}25|^.{15}50|^.{15}75'
+done >> /var/www/html/dgm/25/DGM25_${E}0${N}0.xyz
+
+wc -l /var/www/html/dgm/25/DGM25_${E}0${N}0.xyz
+#awk '{printf "%.3f %.3f %.3f\n",$1,$2,$3}' /var/www/html/dgm/25/DGM25_${E}0${N}0.xyz | sort -n | uniq > tmp.xyz
+awk '{printf "%.3f %.3f %.3f\n",$1,$2,$3}' /var/www/html/dgm/25/DGM25_${E}0${N}0.xyz | sort -k1,1 -k2,2 --stable --unique > tmp.xyz
+mv tmp.xyz /var/www/html/dgm/25/DGM25_${E}0${N}0.xyz
+wc -l /var/www/html/dgm/25/DGM25_${E}0${N}0.xyz
+
+

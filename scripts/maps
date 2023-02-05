@@ -1,0 +1,20 @@
+#!/bin/bash
+
+cd ..
+
+count=0
+for i in Sinzig
+do
+  for j in $(seq 1 0.5 10)
+  do
+  gumap -c ${i} -l ${j}
+  echo "Debug"
+  ls ../maps/tmp.png
+  wkhtmltoimage http://localhost:8000/cache/map.html ../maps/tmp.png
+  ls -lrtah ../maps/tmp.png
+  number=$(printf %03d ${count})  
+  convert ../maps/tmp.png -pointsize 72 -fill Red -annotate +500+800 "Pegel: ${j}m" ../maps/tmp1.png 
+  convert ../maps/tmp1.png -pointsize 42 -fill Red -annotate +100+100 "www.guahrdian.com" ../maps/${i}_${number}.png 
+  let count=${count}+1
+  done
+done

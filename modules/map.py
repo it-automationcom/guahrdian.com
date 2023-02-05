@@ -1,9 +1,9 @@
 #!/usr/bin/python3
-
+#{{{imports
 import osm
 import dgm
 import pbf
-
+#}}}
 map0=osm.map()
 map0.set_boundaries(3,3,3,3)
 map0.from_deg(6.98,50.51,10)

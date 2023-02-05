@@ -1,0 +1,11 @@
+#!/bin/bash
+
+BASEURL="http://download.geofabrik.de/europe/germany/"
+OUTPUT_DIR="/var/www/html/pbf"
+cd ${OUTPUT_DIR}
+for i in nordrhein-westfalen rheinland-pfalz
+do
+ URL=${BASEURL}${i}-latest.osm.pbf
+ wget -c ${URL}
+done
+osmium merge --overwrite nordrhein-westfalen-latest.osm.pbf rheinland-pfalz-latest.osm.pbf -o base.pbf

@@ -154,19 +154,19 @@ for (let i=0; i<10;i++){
 
 function debug(){
 $.ajax({
-  url: "folium.html",
+  url: "debug.html",
   cache: false
   }).done(function(data){
   $(".debug").html(data);
   });
 }
 
-function info(){
+function info(link){
 $.ajax({
-  url: "folium.html",
+  url: "info/buildings/"+link,
   cache: false
   }).done(function(data){
-  $(".debug").html(data);
+  $(".info").html(data);
   });
 }
 

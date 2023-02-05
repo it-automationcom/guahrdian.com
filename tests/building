@@ -1,0 +1,80 @@
+#!/usr/bin/python3
+
+import osm
+import osm_objects
+import geopy.distance   
+import dgm
+import json
+
+building1=osm_objects.building()
+building1.from_nominatim("Bonner Str.7, Dernau")
+location=building1.get_location()
+altitude=building1.get_altitude()   
+river=river_trace=osm.trace("http://localhost:8000/osm",318372)
+loc=[location["lat"],location["lon"]]
+
+# calculate nearest river point
+spring=river.get_points()[0]
+distance_from_river=geopy.distance.geodesic(loc,spring).km
+for i in river.get_points():
+    distance=(geopy.distance.geodesic(loc,i).km)
+    if distance <= distance_from_river:
+        distance_from_river=distance
+        river_closest_node=i
+
+lat=location["lat"]
+lon=location["lon"]
+
+building_location=[lat,lon]
+building_altitude=dgm.altitude.from_deg(lat,lon)
+
+lat=river_closest_node[0]
+lon=river_closest_node[1]
+river_zero_level=dgm.altitude.from_deg(lat,lon)
+
+danger_level1=building_altitude-river_zero_level-2.5
+danger_level2=building_altitude-river_zero_level
+danger_level3=building_altitude-river_zero_level+2.5
+danger_level4=building_altitude-river_zero_level+5
+danger_level5=building_altitude-river_zero_level+7.5
+building_id=location["osm_id"]
+
+#{{{print
+#print("location:",location)
+#print("building_id:",building_id)
+#print("Location:",building_location)
+#print("Altitude:",building_altitude)
+#print("Distance from river:",distance_from_river)
+#print("Closest Node of river:",river_closest_node) 
+#print("River Zero Level:", river_zero_level)
+#print("Danger Level 1:", danger_level1)
+#print("Danger Level 2:", danger_level2)
+#print("Danger Level 3:", danger_level3)
+#print("Danger Level 4:", danger_level4)
+#print("Danger Level 5:", danger_level5)
+#}}}
+#{{{ json
+#print ("{\"building_id\": \""+str(building_id)+"\",\
+# \"building_altitude\":",building_altitude,",\
+# \"river_zero_level\":",river_zero_level,",\
+# \"danger_level1\":",danger_level1,",\
+# \"danger_level2\":",danger_level2,",\
+# \"danger_level3\":",danger_level3,",\
+# \"danger_level4\":",danger_level4,",\
+# \"danger_level5\":",danger_level5,",\
+# \"building_location\":",json.dumps(building_location),",\
+# \"river_closest_node\":",json.dumps(river_closest_node),",\
+# \"distance_from_river\":",distance_from_river,\
+# "}")
+#}}}
+
+building2=osm_objects.building()
+building2.add_river(318372)
+building2.add_flood_level(-4)
+building2.from_way_id(building_id)
+#building2.print()
+building2.to_json()
+
+
+
+

@@ -3,18 +3,4 @@
 <button class="0" id="map_e" type="button" onclick="map_e()">Enable Map </button>
 <button class="1" id="mapl_d" type="button" onclick="mapl_d()">Disable Maplayers</button>
 <button class="1" id="mapl_e" type="button" onclick="mapl_e()">Enable Maplayers</button>
-<button class="2" id="l0" type="button" onclick="l0_d()">Disable Layer 0 </button>
-<button class="2" id="l0" type="button" onclick="l0_e()">Enable Layer 0 </button>
-<button class="2" id="l1" type="button" onclick="l1_d()">Disable Layer 1 </button>
-<button class="2" id="l1" type="button" onclick="l1_e()">Enable Layer 1 </button>
-<button class="2" id="l2" type="button" onclick="l2_d()">Disable Layer 2 </button>
-<button class="2" id="l2" type="button" onclick="l2_e()">Enable Layer 2 </button>
-<button class="2" id="l3" type="button" onclick="l3_d()">Disable Layer 3 </button>
-<button class="2" id="l3" type="button" onclick="l3_e()">Enable Layer 3 </button>
-<button class="2" id="l4" type="button" onclick="l4_d()">Disable Layer 4 </button>
-<button class="2" id="l4" type="button" onclick="l4_e()">Enable Layer 4 </button>
-<button class="2" id="l5" type="button" onclick="l5_d()">Disable Layer 5 </button>
-<button class="2" id="l5" type="button" onclick="l5_e()">Enable Layer 5 </button>
-<button class="2" id="animation" type="button" onclick="animation()">Animation</button>
-<button class="2" id="debug" type="button" onclick="debug()">Debug</button>
 </div>

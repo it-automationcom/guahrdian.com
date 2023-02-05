@@ -8,6 +8,7 @@ import api
 import wget
 import configparser
 import os
+import sys
 #}}}
 #{{{read config
 config=configparser.ConfigParser()
@@ -15,8 +16,20 @@ configfile=os.path.dirname(__file__)+'/../config.ini'
 config.read(configfile)
 #}}}
 #{{{tile
+""" @brief docstring
+Documentation for osm package.
+
+More details
+"""
 class tile:
+    """
+    Tile objects define single tiles of the map
+    
+    """
 #{{{ __init__
+    ## Create tile object and define zoom level 
+    #
+    # Zoom level must be between 0 and 20
     def __init__(self,zoom):
       self.meta={"x":None,"y":None,"zoom":zoom,"link":None}
       self.deg={"NW":{"lat":None,"lon":None},
@@ -34,12 +47,16 @@ class tile:
       self.size={"x":256,"y":256}
 #}}}
 #{{{from_deg
+    ## Create tile from lat,lon
     def from_deg(self,lon,lat):
       self.meta["x"]=self.lon2x(lon,self.meta["zoom"])
       self.meta["y"]=self.lat2y(lat,self.meta["zoom"])
       self.from_tile(self.meta["x"],self.meta["y"])
 #}}}
 #{{{from_utm
+    ## Create tile from UTM coordinates
+    #
+    # UTM coordinates must be given in the from (N,E,Zone,Hemisphere)
     def from_utm(self,n,e,zone,hemi):
       deg=utm.to_latlon(n,e,zone,hemi)
       self.from_deg(deg[0],deg[1])
@@ -48,12 +65,7 @@ class tile:
     def from_tile(self,x,y):
       self.meta["x"]=x
       self.meta["y"]=y
-      self.meta["link"]="https://tile.openstreetmap.org/"+str(self.meta["zoom"])+"/"+str(self.meta["x"])+"/"+str(self.meta["y"])+".png"
-      #self.meta["link"]="http://tile.stamen.com/terrain-background/"+str(self.meta["zoom"])+"/"+str(self.meta["x"])+"/"+str(self.meta["y"])+".png"
-      #self.meta["link"]="http://tile.stamen.com/terrain/"+str(self.meta["zoom"])+"/"+str(self.meta["x"])+"/"+str(self.meta["y"])+".png"
-      #self.meta["link"]="http://tile.stamen.com/toner/"+str(self.meta["zoom"])+"/"+str(self.meta["x"])+"/"+str(self.meta["y"])+".png"
-      #self.meta["link"]="http://tile.stamen.com/toner-lines/"+str(self.meta["zoom"])+"/"+str(self.meta["x"])+"/"+str(self.meta["y"])+".png"
-      #self.meta["link"]="http://tile.stamen.com/toner-hybrid/"+str(self.meta["zoom"])+"/"+str(self.meta["x"])+"/"+str(self.meta["y"])+".png"
+      self.meta["link"]="https://a.tile.geofabrik.de/15173cf79060ee4a66573954f6017ab0/"+str(self.meta["zoom"])+"/"+str(self.meta["x"])+"/"+str(self.meta["y"])+".png"
       self.deg["NW"]["lat"]=self.y2lat(y,self.meta["zoom"])
       self.deg["NW"]["lon"]=self.x2lon(x,self.meta["zoom"])
       self.deg["NE"]["lat"]=self.y2lat(y,self.meta["zoom"])
@@ -104,6 +116,10 @@ class tile:
 #{{{get_zoom
     def get_zoom(self):
         return(self.meta["zoom"])
+#}}}
+#{{{get_url
+    def get_url(self):
+        return(self.meta["link"])
 #}}}
 #{{{lon2x
     def lon2x(self,lon,zoom):
@@ -172,38 +188,44 @@ class map:
 #}}}
 #{{{from_deg
   def from_deg(self,lat,lon,zoom):
-    #c
+    #{{{ center tile
     self.c=tile(zoom)
     self.c.from_deg(lat,lon)
     self.offset["C"]["tile"]=self.c
     self.zoom=zoom
-    #nw
+    #}}}
+    #{{{ northwest tile
     self.nw=tile(zoom)
     x=self.offset["C"]["tile"].meta["x"]-self.offset["NW"]["dist"]["x"]
     y=self.offset["C"]["tile"].meta["y"]-self.offset["NW"]["dist"]["y"]
     self.nw.from_tile(x,y)
     self.offset["NW"]["tile"]=self.nw
-    #ne
+    #}}}
+    #{{{ northeast tiles
     self.ne=tile(zoom)
     x=self.offset["C"]["tile"].meta["x"]+self.offset["NE"]["dist"]["x"]
     y=self.offset["C"]["tile"].meta["y"]-self.offset["NE"]["dist"]["y"]
     self.ne.from_tile(x,y)
     self.offset["NE"]["tile"]=self.ne
-    #se
+    #}}}
+    #{{{ southeast tile
     self.se=tile(zoom)
     x=self.offset["C"]["tile"].meta["x"]+self.offset["SE"]["dist"]["x"]
     y=self.offset["C"]["tile"].meta["y"]+self.offset["SE"]["dist"]["y"]
     self.se.from_tile(x,y)
     self.offset["SE"]["tile"]=self.se
-    #sw
+    #}}}
+    #{{{ southwest tile
     self.sw=tile(zoom)
     x=self.offset["C"]["tile"].meta["x"]-self.offset["SW"]["dist"]["x"]
     y=self.offset["C"]["tile"].meta["y"]+self.offset["SW"]["dist"]["y"]
     self.sw.from_tile(x,y)
     self.offset["SW"]["tile"]=self.sw
-    # create map
+    #}}}
+    #{{{ create map
     self.size["x"]=(self.offset["SE"]["tile"].meta["x"]-self.offset["NW"]["tile"].meta["x"]+1)*256
     self.size["y"]=(self.offset["SE"]["tile"].meta["y"]-self.offset["NW"]["tile"].meta["y"]+1)*256
+    #}}}
 #}}}
 #{{{get_root_lat
   def get_root_lat(self):
@@ -240,6 +262,14 @@ class map:
 #{{{get_tiles
   def get_tiles(self):
     return(self.tiles)
+#}}}
+#{{{get_xsize
+  def get_xsize(self):
+    return(self.size["x"])
+#}}}
+#{{{get_ysize
+  def get_ysize(self):
+    return(self.size["y"])
 #}}}
 #{{{calculate
   def calculate(self):
@@ -337,6 +367,14 @@ class maplayer:
   def get_bbox_utm(self):
     return(self.bbox_utm)
 #}}}
+#{{{get_xsize
+  def get_xsize(self):
+    return(self.size["x"])
+#}}}
+#{{{get_ysize
+  def get_ysize(self):
+    return(self.size["y"])
+#}}}
 #{{{add_point
   def add_point(self,x,y):
     self.points.append({"x":x,"y":y})
@@ -347,12 +385,37 @@ class maplayer:
 #}}}
 #{{{add_polygon
   def add_polygon(self,polygon):
+    #self.polygons.append(polygon["pixels"])
     self.polygons.append(polygon)
+#}}}
+#{{{polygon_svg
+  def polygon_svg(self,svgfile):
+     orig_stdout=sys.stdout
+     f=open(svgfile,'w')
+     sys.stdout=f
+     print("<svg width=\""+str(self.size["x"])+"\" height=\""+str(self.size["y"])+"\" style=\"position:absolute; left:0; top:0\" z-index:100>")
+     polygon_count=0
+     for i in self.polygons:
+       polygon_count=polygon_count+1
+       polygon=""
+       for j in i["pixels"]:
+         x=str(j["x"])
+         y=str(j["y"])
+         polygon=polygon+" "+x+","+y
+       print("<g id=\"polygon"+str(polygon_count)+"\">")
+       print("<polyline points=\""+polygon+"\" style=\"fill:blue;fill-opacity:30%;stroke:none;stroke-width:1\"/>")
+       print("</g>")
+     print("</svg>")
+     sys.stdout=orig_stdout
+     f.close()
 #}}}
 #{{{display
   def display(self):
+#{{{ header
      print("<div id=\""+str(self.name)+"\">")
      print("<svg width=\""+str(self.size["x"])+"\" height=\""+str(self.size["y"])+"\" style=\"position:absolute; left:0; top:0\" z-index:100>")
+#}}}
+#{{{ points
      points_count=0
      for i in self.points:
        points_count=points_count+1 
@@ -363,6 +426,8 @@ class maplayer:
        print("<g id=\"point"+str(points_count)+"\">")
        print("<polyline points=\""+cross+"\" style=\"fill:none;stroke:blue;stroke-width:1.5\"/>")
        print("</g>")
+#}}}
+#{{{ polylines
      polyline_count=0
      for i in self.polylines:
        polyline_count=polyline_count+1
@@ -374,19 +439,38 @@ class maplayer:
        print("<g id=\"polyline"+str(polyline_count)+"\">")
        print("<polyline points=\""+polyline+"\" style=\"fill:none;stroke:blue;stroke-width:3;stroke-opacity:40%\"/>")
        print("</g>")
+#}}}
+#{{{polygons
      polygon_count=0
      for i in self.polygons:
        polygon_count=polygon_count+1
        polygon=""
-       for j in i:
+       pid=i["id"]
+       name=i["name"]
+       color=i["color"]
+       opacity=i["opacity"]
+       link=i["link"]
+       stroke_color=i["stroke_color"]
+       stroke_width=i["stroke_width"]
+#       link=1039091755
+       for j in i["pixels"]:
          x=str(j["x"])
          y=str(j["y"])
          polygon=polygon+" "+x+","+y
        print("<g id=\"polygon"+str(polygon_count)+"\">")
-       print("<polyline points=\""+polygon+"\" style=\"fill:blue;fill-opacity:30%;stroke:none;stroke-width:1\"/>")
+       print("<a onmouseover=\"info(\'"+str(link)+"\')\">")
+       print("<polyline points=\""+polygon+"\" style=\"fill:"+str(color)+";fill-opacity:"+str(opacity)+"%;stroke:"+str(stroke_color)+";stroke-width:"+str(stroke_width)+"\"/>")
+       print("</a>")
        print("</g>")
      print("</svg>")
      print("</div>")
+     #}}}
+#}}}
+#{{{links
+  def links(self):
+      print("<map name=\"links\">")
+      print("<area shape=\"rect\" coords=\"0,0,900,900\" alt=\"Links\" href=\"folium.html\">")
+      print("</map>")
 #}}}
 #{{{print
   def print(self):
@@ -405,10 +489,11 @@ class maplayer:
 #}}}
 #}}}
 #{{{trace
-# get ways from relation
 class trace:
 #{{{ __init__
     def __init__(self,url,relation):
+        #{{{ initialize variables
+        self.name=None
         self.url=url
         self.relation=str(relation)
         self.startway=None
@@ -416,6 +501,11 @@ class trace:
         self.bbox_deg=[]
         self.bbox_utm=[]
         request_url=self.url+"/relation/"+self.relation
+        self.debug=False
+        if self.debug:
+            print("osm.trace DEBUG:")
+        #}}}
+        #{{{ get xml from API
         # get relation xml
         opener=urllib.request.build_opener()
         for i in range(2):
@@ -425,6 +515,7 @@ class trace:
             fallback_url="https://www.openstreetmap.org/api/0.6/relation/"+self.relation
             output_directory="/var/www/html/osm/relation/"
             wget.download(fallback_url, out=output_directory)   
+            #}}}
         # create a dict for the trace
         # REFACTOR: add multiple relations 
         trace=dict()
@@ -473,14 +564,17 @@ class trace:
                         if key=="natural" and value=="spring":
                             self.startway=way
         ways_set=set(trace["relations"][self.relation]["ways"].keys())
-#        print(ways_set)
+        if self.debug:
+          print(ways_set)
         # Fallbacks if natural:spring is not defined
-        # read first way from config
-        if self.startway == None:
-            self.startway=config[self.relation]['startway']
-        # Use the first way in the list
-        if self.startway == None:
-            self.startway=list(trace["relations"][self.relation]["ways"])[0]
+        try:
+            # read first way from config
+            if self.startway == None:
+                self.startway=config[self.relation]['startway']
+        except:
+            # Use the first way in the list
+            if self.startway == None:
+                self.startway=list(trace["relations"][self.relation]["ways"])[0]
         ordered_ways=list()
         ordered_ways.append(self.startway)
         ordered_nodes=list()
@@ -532,6 +626,7 @@ class point:
     self.deg={"lon":None,"lat":None}
     self.utm=None
     self.maplayer=maplayer
+
 #}}}
 #{{{from_deg
   def from_deg(self,lon,lat):
@@ -540,6 +635,8 @@ class point:
     self.y=int((tile.lat2ypos(None,self.deg["lat"],self.zoom)-self.maplayer.get_root_tile("y"))*256)
     self.maplayer.add_point(self.x,self.y)
     self.utm=utm.from_latlon(lat,lon)
+    self.x_percent=100*self.x/self.maplayer.get_xsize()
+    self.y_percent=100*self.y/self.maplayer.get_ysize()
 #}}}
 #{{{from_utm
   def from_utm(self,e,n,zone,hemi):
@@ -571,6 +668,8 @@ class point:
     print("  self.utm:",self.utm)
     print("  self.x:", self.x)
     print("  self.y:",self.y)
+    print("  self.x_percent:",self.x_percent)
+    print("  self.y_percent:",self.y_percent)
     print("</pre>")
 #}}}
 #}}}
@@ -579,6 +678,8 @@ class polyline:
   def __init__(self,list,maplayer):
     self.zoom=maplayer.get_zoom()
     self.polyline=[]
+    self.width=None
+    self.color=None
     for i in list:
       lon=float(i[1])
       lat=float(i[0])
@@ -592,19 +693,73 @@ class polyline:
 #}}}
 #{{{polygon
 class polygon:
+#{{{ __init__
   def __init__(self,list,maplayer):
+    self.maplayer=maplayer
+    self.name=None
+    self.id=None
+    self.link=None
+    self.color="red"
+    self.opacity=20
+    self.stroke_color="black"
+    self.stroke_width=2
     self.zoom=maplayer.get_zoom()
-    self.polygon=[]
+    self.pixels=[]
+    self.polygon=dict()
     for i in list:
       lon=float(i[1])
       lat=float(i[0])
       self.x=int((tile.lon2xpos(None,lon,self.zoom)-maplayer.get_root_tile("x"))*256)
       self.y=int((tile.lat2ypos(None,lat,self.zoom)-maplayer.get_root_tile("y"))*256)
-      self.polygon.append({"x":self.x,"y":self.y})
-    maplayer.add_polygon(self.polygon)
+      self.pixels.append({"x":self.x,"y":self.y})
+    #maplayer.add_polygon(self.polygon)
+#}}}
+#{{{ add 
+  def add(self):
+      self.polygon["name"]=self.name
+      self.polygon["id"]=self.id
+      self.polygon["link"]=self.link
+      self.polygon["color"]=self.color
+      self.polygon["opacity"]=self.opacity
+      self.polygon["zoom"]=self.zoom
+      self.polygon["stroke_color"]=self.stroke_color
+      self.polygon["stroke_width"]=self.stroke_width
+      self.polygon["pixels"]=self.pixels
+      self.maplayer.add_polygon(self.polygon)
+#}}}
+#{{{ set_name
+  def set_name(self,name):
+      self.name=name
+#}}}
+#{{{ set_id
+  def set_id(self,id):
+      self.id=id
+#}}}
+#{{{ set_link
+  def set_link(self,link):
+      self.link=link
+#}}}
+#{{{ set_color  
+  def set_color(self,color):
+      self.color=color
+#}}}
+#{{{ set_opacity  
+  def set_opacity(self,opacity):
+      self.opacity=opacity
+#}}}
+#{{{ set_stroke_color  
+  def set_stroke_color(self,stroke_color):
+      self.stroke_color=stroke_color
+#}}}
+#{{{ set_stroke_width  
+  def set_stroke_width(self,stroke_width):
+      self.stroke_width=stroke_width
+#}}}
+#{{{print
   def print(self):
     print(self.zoom)
     print(self.polygon)
+#}}}
 #}}}
 #{{{shadow
 class shadow:

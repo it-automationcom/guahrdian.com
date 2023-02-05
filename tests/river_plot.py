@@ -4,6 +4,7 @@ import osm
 import dgm
 import geopy.distance
 import river
+import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 
@@ -35,9 +36,12 @@ def result(returncode):
 #river_trace=osm.trace("http://localhost:8000/osm",318372)
 # Vischelbach
 #river_trace=osm.trace("http://localhost:8000/osm",3251005)
-#river_trace=osm.trace("http://localhost:8000/osm",3314649)
 # Kesselinger Bach
 river_trace=osm.trace("http://localhost:8000/osm",318375)
+# Sahrbach
+#river_trace=osm.trace("http://localhost:8000/osm",3244913)
+# Steinbergsbach
+#river_trace=osm.trace("http://localhost:8000/osm",2101082)
 points=river_trace.get_points()
 traced=river.river(points)
 traced.load_dataframe()
@@ -51,29 +55,34 @@ df.index=df.index.get_level_values(0)
 df.columns=df.columns.get_level_values(0)
 print(df.index)
 print(df.index)
-print(df.loc[5597425,352800])
-#print(df.loc[5597425,362400])
-print(df.loc[5590075:5600050,352800])
-#print(df.loc[5590075:5600050,362400])
 print(traced.get_dataframe().loc[352800:352825,5603500:5603525])
 
-
-mesh=dgm.grid(25)
-mesh.load_from_bbox_utm([(354446.42925326736, 5607050.979783189, 32, 'U'), (369995.93224680924, 5606642.575225855, 32, 'U'), (354015.93088344054, 5591520.967194721, 32, 'U'), (369611.4512380557, 5591112.175551541, 32, 'U'), (354446.42925326736, 5607050.979783189, 32, 'U'), (369995.93224680924, 5606642.575225855, 32, 'U'), (354015.93088344054, 5591520.967194721, 32, 'U'), (369611.4512380557, 5591112.175551541, 32, 'U')])
-mesh.inject_dataframe(traced.get_dataframe())
-mesh.zones(-10)
-zones=mesh.zones_from_utm(357300.0,5595000.0)
-
 alts=traced.get_altitudes()
+print(alts)
+previous_alt=alts[0]
+
+alts_smooth=list()
+for alt in alts:
+    if alt <= previous_alt:
+        alts_smooth.append(alt)
+        previous_alt=alt
+    elif np.isnan(previous_alt):
+        alts_smooth.append(np.nan)
+        previous_alt=alt
+    else:
+        alts_smooth.append(previous_alt)
+print(alts_smooth)
 dist=traced.get_distance()
 dists=traced.get_distances()
 bears=traced.get_bearings()
-plt.plot(alts)
+#plt.plot(alts)
 smooth=savgol_filter(alts,51,3)
-plt.plot(dist,alts)
-plt.plot(dist,smooth)
-plt.plot(dist,bears)
-plt.plot(dist,dists)
+smooth1=savgol_filter(alts,21,3)
+#plt.plot(dist,alts)
+plt.plot(dist,alts_smooth)
+#plt.plot(dist,smooth)
+#plt.plot(dist,bears)
+#plt.plot(dist,dists)
 plt.show()
 
 result(returncode)

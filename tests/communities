@@ -1,0 +1,28 @@
+#!/usr/bin/python3
+#{{{imports
+import osm_objects
+#}}}
+communities=osm_objects.objects_list()
+communities.set_type("area")
+communities.set_tagfilter("boundary=administrative")
+objects=communities.get_objects()
+filtered=communities.tag_filter("admin_level", 8)
+filtered=communities.tag_filter("name", "Dernau")
+#locations=list()
+for i in filtered:
+    relation=osm_objects.relation(i)
+    members=relation.get_members()
+    #for j in members:
+    #    way=osm_objects.way(j)
+    #    nodes=way.get_nodes()
+    #    for k in nodes:
+    #        node=osm_objects.node(k)
+    #        location=node.get_location()
+    #        locations.append(location)
+sorted_ways=osm_objects.sorted_ways()
+for i in members:
+    way=osm_objects.way(i)
+    sorted_ways.way_add(i)
+sorted=sorted_ways.sort()
+sorted_ways.get_polygon()
+# vim:foldmethod=marker:foldlevel=0
