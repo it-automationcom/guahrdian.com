@@ -21,6 +21,7 @@ import imgkit
 import pyvista  
 import shutil
 import map_overview as mo
+from tqdm import tqdm
 #}}}
 #{{{read config
 #{{{init
@@ -234,7 +235,7 @@ if feature_municipal_boundary:
     communities.set_tagfilter("boundary=administrative")
     objects=communities.get_objects()
     filtered_communities=communities.tag_filter("admin_level","8")
-    filtered_communities=communities.tag_filter("name","Dernau")
+    filtered_communities=communities.tag_filter("name","Rech")
     for i in filtered_communities:
         relation=osm_objects.relation(i)
         members=relation.get_members()
@@ -258,9 +259,9 @@ if feature_municipal_boundary:
 if feature_rivers:
     if feature_info:
         print("### Trace Rivers ###")
-    for i in rivers_list:
-        if feature_info:
-            print("  ### Tracing River Id", i,"###")
+    for i in tqdm(rivers_list):
+   #     if feature_info:
+   #        print("  ### Tracing River Id", i,"###")
         river=osm.trace("http://localhost:8000/osm/",i)
         polyline5=osm.polyline(river.get_points(),maplayer5)
     if debug_rivers:
