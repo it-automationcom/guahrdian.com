@@ -1,10 +1,12 @@
 #!/usr/bin/python3
+#{{{ imports
 import pandas as pd
-
+#}}}
+#{{{ read dataframe from csv
 df = pd.read_csv('/home/tk/tmp/7/dgm25/test.csv', header=None)
 scale=1
-
-#print(df)
+#}}}
+#{{{ output stl
 print("solid test")
 for x1 in range(400):
   for y in range(400):
@@ -23,5 +25,6 @@ for x1 in range(400):
     print("  endloop")
     print("endfacet")
 print("endsolid test")
-
+#}}}
+# vim:foldmethod=marker:foldlevel=0
 

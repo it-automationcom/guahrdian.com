@@ -243,21 +243,4 @@ class grid:
     for j in range(0,xsize+1,40):
       print("<path d=\"M0 ",j," l",xsize," 0\" style=\"fill:none;stroke:black;stroke-width:0.3\"/>",sep='')
 #}}}
-#map=map(lat,lon,zoom)
-#map.se(1,1)
-#map.calculate()
-#maplayer=maplayer(map)
-#point0=point()
-#point0.latlon(lat,lon)
-#point1=point()
-#point1.addutm(point0.utm.n,point0.utm.e)
-#point1.print()
-#maplayer.addpoint(point0)
-#maplayer.addpoint(point1)
-#map.print()
-#tile=tile(15)
-#tile.deg(lat,lon)
-#print(tile.x)
-#print(tile.y)
-#print(tile.zoom)
 # vim:foldmethod=marker:foldlevel=0

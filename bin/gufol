@@ -1,12 +1,13 @@
 #!/usr/bin/python3
-
+#{{{ import
 import folium as fo
-#map=fo.Map(location=[50,7], zoom_start=12, tiles='http://tile.stamen.com/terrain-background/{z}/{x}/    {y}.png', attr="<a href=https://endless-sky.github.io/>Endless Sky</a>")
+#}}}
+#{{{ setup map
 map1=fo.Map(location=[50.5344234,7.0434557], zoom_start=10, min_zoom=10, dragging=False,min_lon=7,max_lon=7.1,max_bounds=True,tiles='Stamen terrain')
 tooltip="<a href=\"www.guahrdian.com\">Dernau</a>"
 fo.Marker([50.5344234,7.0434557], popup="<a href=\"http://www.guahrdian.com\" target=\"_top\">Dernau</a>", tooltip=tooltip).add_to(map1)
 map1.fit_bounds([[50.5052005,7.0253563],[50.5433174,7.059332]],max_zoom=10)
 map1.save("/var/www/html/live/folium.html")
-#print(map1.to_json())
-
+#}}}
+# vim:foldmethod=marker:foldlevel=0
 
