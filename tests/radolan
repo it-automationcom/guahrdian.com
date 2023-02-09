@@ -1,0 +1,7 @@
+#!/usr/bin/python3
+
+import radolan
+
+rl=radolan.radar()
+rl.set_inputfile("/var/www/html/radolan/rw/RW_20210714-0050.asc")
+rl.get_dataframe()
